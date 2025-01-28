@@ -1,0 +1,36 @@
+{
+  "name": "kubera",
+  "version": "1.0.0",
+  "description": "Make grocery shopping easier!",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon --watch 'src/**/*.ts' --exec 'npm run build && npm run start'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Saavy-25/Kubera-Backend.git"
+  },
+  "author": "Sarah Perez",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Saavy-25/Kubera-Backend/issues"
+  },
+  "homepage": "https://github.com/Saavy-25/Kubera-Backend#readme",
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.10",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "eslint": "^9.19.0",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}
