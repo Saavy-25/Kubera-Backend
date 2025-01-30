@@ -1,6 +1,9 @@
-#ignore .DS_Store stuff
+# ignore .DS_Store stuff
 .DS_Store
 
-#ignore virtural environment
+# ignore virtural environment
 .venv
 venv
+
+# ignore environment variables
+.env
