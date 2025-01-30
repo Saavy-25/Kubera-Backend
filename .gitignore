@@ -6,4 +6,4 @@
 venv
 
 # ignore environment variables
-.env
+.env 
