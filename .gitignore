@@ -1,0 +1,6 @@
+#ignore .DS_Store stuff
+.DS_Store
+
+#ignore virtural environment
+.venv
+venv
