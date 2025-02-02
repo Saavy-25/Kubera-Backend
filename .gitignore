@@ -7,3 +7,11 @@ venv
 
 # ignore environment variables
 .env 
+
+# ignore any developer updates to config.ini
+/config.ini
+
+# ignore testing receipts
+AzureDIConnection/PublixReceipt.jpg
+AzureDIConnection/TraderJoesReceipt.jpg
+AzureDIConnection/WalmartReceipt.jpg
