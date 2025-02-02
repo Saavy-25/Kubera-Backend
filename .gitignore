@@ -9,4 +9,9 @@ venv
 .env 
 
 # ignore any developer updates to config.ini
-AzureDIConnection/config.ini
+/config.ini
+
+# ignore testing receipts
+AzureDIConnection/PublixReceipt.jpg
+AzureDIConnection/TraderJoesReceipt.jpg
+AzureDIConnection/WalmartReceipt.jpg

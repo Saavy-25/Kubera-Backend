@@ -2,10 +2,8 @@
 
 Run 'pip install -r requirements.txt'
 
-## Connection to OCR resource
+Run DevSetUp.py and add resource keys.
 
-After cloning the project, navigate to the AzureDIConnection folder.
+## Azure Doccument Inteligence Connection
 
-Run the SetUp.py folder and add the Azure resource key into the created configuration file.
-
-Current connection test is looking for a 'PublixReceipt.jpg' image in this directory (not committed to git), add in a receipt with this name to run.
+Add in images "PublixReceipt.jpg", "TraderJoes.jpg" and "WalmartReceipt.jpg" to the AzureDIConnection directory before running TestConnection.py file. 

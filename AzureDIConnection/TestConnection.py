@@ -7,25 +7,33 @@ from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 
 import configparser
 
-# use your `key` and `endpoint` environment variables
 endpoint = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
+PublixReceipt = "PublixReceipt.jpg"
+TraderJoesReceipt = "TraderJoesReceipt.jpg"
+WalmartReceipt = "WalmartReceipt.jpg"
+
+def format_price(price_dict):
+    return "".join([f"{p}" for p in price_dict.values()])
+
+def convertBytes(fileName):
+    # sample document, convert to bytes
+    with open(fileName, "rb") as image:
+        f = image.read()
+        b = bytearray(f)
+
+def getKey(resource, secret):
+    #get key from .ini file
+    config = configparser.ConfigParser()
+    config.read('../config.ini')
+    key = config[resource][secret]
 
 def analyze_receipts():
 
-    # sample document
-    with open("PublixReceipt.jpg", "rb") as image:
-        f = image.read()
-        b = bytearray(f)
-    
-    config = configparser.ConfigParser()
-    config.read('config.ini')
-    key = config['AzureDocInteli']['resource_key']
-
     client = DocumentIntelligenceClient(
-        endpoint=endpoint, credential=AzureKeyCredential(key)
+        endpoint=endpoint, credential=AzureKeyCredential(getKey('AzureDocInteli', 'resource_key'))
     )
     poller = client.begin_analyze_document(
-        "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=b), locale="en-US"
+        "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=convertBytes(PublixReceipt)), locale="en-US"
     )
     receipts: AnalyzeResult = poller.result()
 
