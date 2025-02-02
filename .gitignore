@@ -18,3 +18,5 @@ AzureDIConnection/WalmartReceipt.jpg
 
 # ignore any pycache files
 __pycache__/
+*.pyc
+*.pyo
