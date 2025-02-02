@@ -1,3 +1,4 @@
+# https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 import os
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -10,12 +11,6 @@ import configparser
 endpoint = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
 
 def analyze_receipts():
-    try:
-        with open("config.ini", "x") as f:
-            f.write("[AzureDocInteli]")
-            f.write("resource_key=")
-    except FileExistsError:
-        print("config.ini exists")
 
     # sample document
     with open("PublixReceipt.jpg", "rb") as image:
