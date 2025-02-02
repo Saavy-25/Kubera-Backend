@@ -10,6 +10,13 @@ import configparser
 endpoint = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
 
 def analyze_receipts():
+    try:
+        with open("config.ini", "x") as f:
+            f.write("[AzureDocInteli]")
+            f.write("resource_key=")
+    except FileExistsError:
+        print("config.ini exists")
+
     # sample document
     with open("PublixReceipt.jpg", "rb") as image:
         f = image.read()
