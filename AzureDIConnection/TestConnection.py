@@ -1,4 +1,3 @@
-# https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 import os
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -12,21 +11,25 @@ PublixReceipt = "PublixReceipt.jpg"
 TraderJoesReceipt = "TraderJoesReceipt.jpg"
 WalmartReceipt = "WalmartReceipt.jpg"
 
+# from:
+# https://github.com/Azure-Samples/document-intelligence-code-samples/blob/main/Python(v4.0)/Prebuilt_model/sample_analyze_receipts.py
 def format_price(price_dict):
     return "".join([f"{p}" for p in price_dict.values()])
 
+# sample document, convert to bytes
 def convertBytes(fileName):
-    # sample document, convert to bytes
     with open(fileName, "rb") as image:
         f = image.read()
         b = bytearray(f)
 
+# get key from .ini file
 def getKey(resource, secret):
-    #get key from .ini file
     config = configparser.ConfigParser()
     config.read('../config.ini')
     key = config[resource][secret]
 
+# Base code from:
+# https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 def analyze_receipts():
 
     client = DocumentIntelligenceClient(
