@@ -22,18 +22,16 @@ def convertBytes(fileName):
         f = image.read()
         b = bytearray(f)
 
-# get key from .ini file
-def getKey(resource, secret):
-    config = configparser.ConfigParser()
-    config.read('../config.ini')
-    key = config[resource][secret]
+# get key from .env file
+def getKey():
+    return os.getenv("AZURE_RESOURCE_KEY")
 
 # Base code from:
 # https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 def analyze_receipts():
 
     client = DocumentIntelligenceClient(
-        endpoint=endpoint, credential=AzureKeyCredential(getKey('AzureDocInteli', 'resource_key'))
+        endpoint=endpoint, credential=AzureKeyCredential(getKey())
     )
     poller = client.begin_analyze_document(
         "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=convertBytes(PublixReceipt)), locale="en-US"
