@@ -3,8 +3,7 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeResult
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
-
-import configparser
+from dotenv import load_dotenv
 
 endpoint = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
 PublixReceipt = "PublixReceipt.jpg"
@@ -21,18 +20,18 @@ def convertBytes(fileName):
     with open(fileName, "rb") as image:
         f = image.read()
         b = bytearray(f)
+    return b
 
 # get key from .env file
 def getKey():
+    load_dotenv()
     return os.getenv("AZURE_RESOURCE_KEY")
 
 # Base code from:
 # https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 def analyze_receipts():
+    client = DocumentIntelligenceClient(endpoint=endpoint, credential=AzureKeyCredential(getKey()))
 
-    client = DocumentIntelligenceClient(
-        endpoint=endpoint, credential=AzureKeyCredential(getKey())
-    )
     poller = client.begin_analyze_document(
         "prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=convertBytes(PublixReceipt)), locale="en-US"
     )

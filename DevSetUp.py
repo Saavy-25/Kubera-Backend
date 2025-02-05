@@ -1,6 +1,7 @@
 if __name__ == "__main__":
     try:
-        with open("config.ini", "x") as f:
-            f.write("[AzureDocInteli]\nresource_key=")
+        with open(".env", "x") as f:
+            f.write("MONGO_URI=\n")
+            f.write("AZURE_RESOURCE_KEY=")
     except FileExistsError:
-        print("config.ini exists")
+        print(".env exists")
