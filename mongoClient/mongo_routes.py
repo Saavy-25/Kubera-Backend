@@ -34,8 +34,8 @@ def get_data():
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
-        collection = db["items"]
+        db = mongoClient["grocery-db"]
+        collection = db["store-product"]
         
         # Perform a query (e.g., find all documents)
         data = collection.find()
