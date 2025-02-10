@@ -19,13 +19,3 @@ class StoreProduct:
         print("Price: ", self.price)
         print("Date: ", self.date)
         print("Generic Name: ", self.generic_name)
-
-    # def json(self):
-    #     return json.dumps(self)
-    
-    # def update(self, str):
-    #     response = json.loads(str)
-    #     self.product_id = response["product_id"]
-    #     self.unit = response["unit"]
-    #     self.item_id = response["item_id"]
-    #     self.prices = response["prices"]

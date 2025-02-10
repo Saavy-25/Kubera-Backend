@@ -19,3 +19,12 @@ class Receipt:
         for item_number, product in enumerate(self.products):
             print("----------Product ", item_number + 1, "----------")
             product.print()
+
+    def getMap(self):
+        return {
+            "pk": self.pk,
+            "sk": self.sk,
+            "store_name": self.store_name,
+            "date": self.date, 
+            "products": [product.__dict__ for product in self.products]
+            }

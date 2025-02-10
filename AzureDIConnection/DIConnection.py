@@ -7,6 +7,7 @@ from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 from dotenv import load_dotenv
 
 import sys
+from flask import jsonify
 
 # Add the parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -82,3 +83,6 @@ def analyze_receipt(r):
 if __name__ == "__main__":
     r = analyze_receipt(SamsReceipt)
     r.print()
+
+    #testing dictionary conversion
+    print(r.getMap())
