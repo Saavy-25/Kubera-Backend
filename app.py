@@ -3,6 +3,7 @@ import logging
 from flask import Flask
 from dotenv import load_dotenv
 from mongoClient.mongo_routes import mongo_bp 
+from FlutterService.flutter_routes import flutter_bp
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,8 +17,9 @@ logging.basicConfig(level=logging.DEBUG)
 def home():
     return "Hello, Flask!"
 
-# Register the Blueprint
+# Register Blueprints
 app.register_blueprint(mongo_bp, url_prefix='/mongo')
+app.register_blueprint(flutter_bp, url_prefix='/flutter')
 
 if __name__ == "__main__":
     app.run(debug=True)
