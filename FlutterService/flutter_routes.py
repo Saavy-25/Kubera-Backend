@@ -13,6 +13,7 @@ def send_data():
     # byte data will be converted to receipt object 
     receipt = analyze_receipts(data)
 
+    # the idea is that the frontend will get processed receipt data to verify 
     return jsonify({"status": "success", "receipt_data": receipt}), 200
 
 # flutter app will call this endpoint to save receipt to mongo after user verifies data
