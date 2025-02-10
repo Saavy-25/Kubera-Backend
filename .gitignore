@@ -15,6 +15,7 @@ venv
 AzureDIConnection/PublixReceipt.jpg
 AzureDIConnection/TraderJoesReceipt.jpg
 AzureDIConnection/WalmartReceipt.jpg
+AzureDIConnection/SamsReceipt.jpg
 
 # ignore any pycache files
 __pycache__/
