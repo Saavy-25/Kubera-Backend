@@ -11,6 +11,13 @@ class Receipt:
         self.products = products #list of product objects
         self.date = date
 
+    def decode(self):
+        '''
+        for product in self.products:
+            self.product_name = DecodingService(self.line_item)
+            self.generic_name = MappingService(self.product_name)
+        '''
+
     def print(self):
         print("Store Name: ", self.store_name)
         print("Date: ", self.date)

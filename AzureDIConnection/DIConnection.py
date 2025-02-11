@@ -76,7 +76,7 @@ def analyze_receipt(r):
                         else:
                             item_total_price = "None"
 
-                        products.append(StoreProduct(product_name=item_description, unit=item_quantity, price=item_total_price, date=transaction_date))
+                        products.append(StoreProduct(line_item=item_description, unit=item_quantity, price=item_total_price, date=transaction_date))
 
                 return Receipt(store_name=merchant_name, date=transaction_date, products=products)
 
