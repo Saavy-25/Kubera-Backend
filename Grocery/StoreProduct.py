@@ -12,13 +12,14 @@ class StoreProduct:
         self.date = date
         self.line_item = line_item #abbreviation not decoded
         self.generic_matches = [] #return value from matching service
-        self.product_name = "None" 
-        self.generic_name = "None"
+        self.product_name = "None" #determined by aberviation expansion service
+        self.generic_name = "None" #should be verified by user before filled in
 
     def print(self):
         print("Line Item: ", self.line_item)
-        print("Product Name: ", self.product_name)
+        print("Product Name (determined by abreviation expansion service): ", self.product_name)
         print("Unit: ", self.unit)
         print("Price: ", self.price)
         print("Date: ", self.date)
-        print("Generic Name: ", self.generic_name)
+        print("Generic matching from ML service: ", self.generic_matches)
+        print("Generic Name (verified/selected by user): ", self.generic_name)

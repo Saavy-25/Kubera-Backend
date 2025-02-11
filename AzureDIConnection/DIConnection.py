@@ -84,5 +84,5 @@ if __name__ == "__main__":
     r = analyze_receipt(SamsReceipt)
     r.print()
 
-    #testing dictionary conversion
-    print(r.getMap())
+    # testing dictionary conversion
+    # print(r.getMap())
