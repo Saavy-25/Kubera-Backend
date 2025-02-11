@@ -11,7 +11,8 @@ class StoreProduct:
         self.price = price #list of timestamps/prices db, one value here for this object
         self.date = date
         self.line_item = line_item #abbreviation not decoded
-        self.product_name = "None"
+        self.generic_matches = [] #return value from matching service
+        self.product_name = "None" 
         self.generic_name = "None"
 
     def print(self):

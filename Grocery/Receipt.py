@@ -15,7 +15,7 @@ class Receipt:
         '''
         for product in self.products:
             self.product_name = DecodingService(self.line_item)
-            self.generic_name = MappingService(self.product_name)
+            self.generic_matches = MappingService(self.product_name)
         '''
 
     def print(self):
