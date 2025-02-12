@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 from AzureDIConnection.TestConnection import analyze_receipts
+# from mongoClient.mongo_routes import add_receipt_data
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
@@ -17,14 +18,18 @@ def send_data():
     return jsonify({"status": "success", "receipt_data": receipt}), 200
 
 # flutter app will call this endpoint to save receipt to mongo after user verifies data
-@flutter_bp.route('/save_receipt', methods=['POST'])
-def send_data():
-    data = request.get_json()
-    # Process the received data here
+# @flutter_bp.route('/save_receipt', methods=['POST'])
+# def send_data():
+#     data = request.get_json()
+#     # Process the received data here
 
-    # call mongo client and post data to mongo
+#     # call mongo client and post data to mongo
+#     try:
+#         add_receipt_data(data) # posts to mongo
+#     except Exception as e:
+#         return jsonify({"status": "error", "message": str(e)}), 500
 
-    return jsonify({"status": "success", "data_received": data}), 200
+#     return jsonify({"status": "success", "data_received": data}), 200
 
 
 @flutter_bp.route('/get_data', methods=['GET'])

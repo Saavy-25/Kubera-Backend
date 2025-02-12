@@ -111,3 +111,19 @@ def delete_data(id):
         return jsonify({"message": "Data deleted successfully"})
     except Exception as e:
         return f"An error occurred: {e}"
+    
+# def add_receipt_data(data):
+#     try:
+#         if mongoClient is None:
+#             raise ValueError("MongoDB connection is not initialized")
+        
+#         # Access the database and collection
+#         db = mongoClient["grocery-db"]
+#         collection = db["receipts"]
+        
+#         # Insert the data into the collection
+#         result = collection.insert_one(data)
+        
+#         return jsonify({"message": "Data added successfully", "id": str(result.inserted_id)})
+#     except Exception as e:
+#         return f"An error occurred: {e}"
