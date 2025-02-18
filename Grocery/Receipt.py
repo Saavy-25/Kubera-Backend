@@ -11,6 +11,13 @@ class Receipt:
         self.products = products #list of product objects
         self.date = date
 
+    def decode(self):
+        '''
+        for product in self.products:
+            self.product_name = DecodingService(self.line_item)
+            self.generic_matches = MappingService(self.product_name)
+        '''
+
     def print(self):
         print("Store Name: ", self.store_name)
         print("Date: ", self.date)
@@ -19,3 +26,12 @@ class Receipt:
         for item_number, product in enumerate(self.products):
             print("----------Product ", item_number + 1, "----------")
             product.print()
+
+    def getMap(self):
+        return {
+            "pk": self.pk,
+            "sk": self.sk,
+            "store_name": self.store_name,
+            "date": self.date, 
+            "products": [product.__dict__ for product in self.products]
+            }
