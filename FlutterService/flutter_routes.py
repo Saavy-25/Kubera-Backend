@@ -3,7 +3,7 @@ from PIL import Image
 from flask import Blueprint, request, jsonify
 import io
 
-from AzureDIConnection.TestConnection import analyze_receipts
+from AzureDIConnection.DIConnection import analyze_receipts
 # from mongoClient.mongo_routes import add_receipt_data
 
 flutter_bp = Blueprint('flutter_bp', __name__)

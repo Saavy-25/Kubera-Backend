@@ -6,7 +6,7 @@ Run DevSetUp.py and add resource keys.
 
 ## Azure Doccument Inteligence Connection
 
-Add in images "PublixReceipt.jpg", "TraderJoes.jpg" "SamsReceipt.jpg" and "WalmartReceipt.jpg" to the AzureDIConnection directory before running TestConnection.py file. 
+Add in images "PublixReceipt.jpg", "TraderJoes.jpg" "SamsReceipt.jpg" and "WalmartReceipt.jpg" to the AzureDIConnection directory before running DIConnection.py file. 
 
 ## MongoDB Connection
 
