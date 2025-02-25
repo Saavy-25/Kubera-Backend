@@ -1,0 +1,16 @@
+Add a new user to the usersdb
+---
+tags: ['Authentication']
+parameters:
+  - name: User-set values
+    in: body
+    required: true
+    schema:
+      type: json
+      properties:
+        username:
+          type: string
+          example: test_user
+        password:   
+          type: string
+          example: test_password

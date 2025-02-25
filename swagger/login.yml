@@ -1,0 +1,16 @@
+Login user using username and password
+---
+tags: ['Authentication']
+parameters:
+  - name: Username and password
+    in: body
+    required: true
+    schema:
+      type: json
+      properties:
+        username:
+          type: string
+          example: test_user
+        password:   
+          type: string
+          example: test_password
