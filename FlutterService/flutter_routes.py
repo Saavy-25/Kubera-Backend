@@ -3,6 +3,7 @@ from PIL import Image
 from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
+from mongoClient.mongo_client import mongoClient
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -35,18 +36,26 @@ def process_receipt():
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500
 
 # flutter app will call this endpoint to save receipt to mongo after user verifies data
-# @flutter_bp.route('/save_receipt', methods=['POST'])
-# def send_data():
-#     data = request.get_json()
-#     # Process the received data here
-
-#     # call mongo client and post data to mongo
-#     try:
-#         add_receipt_data(data) # posts to mongo
-#     except Exception as e:
-#         return jsonify({"status": "error", "message": str(e)}), 500
-
-#     return jsonify({"status": "success", "data_received": data}), 200
+@flutter_bp.route('/post_receipt', methods=['POST'])
+def post_receipt():
+    try:
+        data = request.get_json()
+        # Process the received data here
+        # TODO: clean up possible generic matches array and only keep match selected from user
+        logging.debug(f"Data from client: {data}")
+        
+        # Access the database and collection
+        db = mongoClient["receiptdb"]
+        collection = db["receipts"]
+        
+        # Insert the data into the collection
+        result = collection.insert_one(data)
+        logging.debug(f"Data from mongo: {result}")
+        
+        return jsonify({"status": "success", "data_received": data}), 200
+    except Exception as e:
+        logging.error(f"Error posting receipt to MongoDB: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @flutter_bp.route('/get_data', methods=['GET'])
