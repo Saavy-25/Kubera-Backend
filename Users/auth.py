@@ -39,7 +39,7 @@ def signup():
         print("unable to add")
         return f"An error occurred: {e}"
 
-@auth_bp.route('/login', methods=['GET'])
+@auth_bp.route('/login', methods=['POST'])
 @swag_from('../swagger/login.yml')
 def login():
     '''Login user using username and password'''
