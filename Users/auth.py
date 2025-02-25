@@ -1,7 +1,5 @@
 import os
 from flask import Blueprint, jsonify, request
-from pymongo import MongoClient
-import certifi
 from flask_login import login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
