@@ -2,8 +2,9 @@ import logging
 from PIL import Image
 from flask import Blueprint, request, jsonify
 import io
+from Grocery.Receipt import Receipt
 
-from AzureDIConnection.DIConnection import analyze_receipts
+from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
 
 flutter_bp = Blueprint('flutter_bp', __name__)
@@ -26,9 +27,9 @@ def process_receipt():
             img = Image.open(file.stream)
             img_io = io.BytesIO()
             img.save(img_io, 'JPEG')
-            receipt = analyze_receipts(img_io)
-            logging.debug(f"Processed receipt: {receipt}")
-            return jsonify({'message': 'File successfully uploaded'}), 200
+            receipt = analyze_receipt(img_io)
+            logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
+            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
     except Exception as e:
         logging.error(f"Error processing receipt: {e}")
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500
