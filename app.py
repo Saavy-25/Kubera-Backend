@@ -1,23 +1,63 @@
+import os
 import logging
-
+import secrets
+import certifi
 from flask import Flask
 from dotenv import load_dotenv
-from mongoClient.mongo_routes import mongo_bp 
+from flask_login import LoginManager
+from flasgger import Swagger
+from pymongo import MongoClient
+from mongoClient.mongo_routes import mongo_bp
+from Users.auth import auth_bp
+from Users.User import User
 
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize flask app and swagger page
 app = Flask(__name__)
+app.config['SWAGGER'] = {
+    'title': 'Kubera API',
+    "specs": [
+        {
+            "endpoint": 'apis',
+            "route": '/apis'
+        }
+    ],
+}
+swagger = Swagger(app)
+
+# Set secret key for session management
+app.secret_key = secrets.token_hex(16)
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
+
+# Set up MongoDB client- needed for load_user
+mongo_uri = os.getenv("MONGO_URI")
+mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
 
 @app.route("/")
 def home():
     return "Hello, Flask!"
 
-# Register the Blueprint
+# Initialize login object
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+# Callback required by the manager
+@login_manager.user_loader
+def load_user(username):
+    '''Function required by LoginManager'''
+    db = mongoClient["userdb"]
+    collection = db["users"]
+    query = {"username": username}
+    mongo_entry = collection.find_one(query)
+    return User(username=mongo_entry["username"], pw=mongo_entry["password"], receipts=mongo_entry["receiptIds"], lists=mongo_entry["listIds"])
+
+# Register blueprints
 app.register_blueprint(mongo_bp, url_prefix='/mongo')
+app.register_blueprint(auth_bp, url_prefix='/auth')
 
 if __name__ == "__main__":
     app.run(debug=True)
