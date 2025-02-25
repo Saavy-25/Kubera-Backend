@@ -5,12 +5,7 @@ from pymongo import MongoClient
 import certifi
 import pymongo
 from dotenv import load_dotenv
-
-# Set up MongoDB URI from environment variable
-mongo_uri = os.getenv("MONGO_URI")
-
-# Initialize the MongoDB client Object
-mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
+from mongoClient.mongo_client import mongoClient
 
 # Define mongoDB Blueprint
 mongo_bp = Blueprint('mongo_bp', __name__)
@@ -112,18 +107,3 @@ def delete_data(id):
     except Exception as e:
         return f"An error occurred: {e}"
     
-# def add_receipt_data(data):
-#     try:
-#         if mongoClient is None:
-#             raise ValueError("MongoDB connection is not initialized")
-        
-#         # Access the database and collection
-#         db = mongoClient["grocery-db"]
-#         collection = db["receipts"]
-        
-#         # Insert the data into the collection
-#         result = collection.insert_one(data)
-        
-#         return jsonify({"message": "Data added successfully", "id": str(result.inserted_id)})
-#     except Exception as e:
-#         return f"An error occurred: {e}"
