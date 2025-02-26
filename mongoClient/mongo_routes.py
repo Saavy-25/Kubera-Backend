@@ -29,8 +29,8 @@ def get_data():
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["grocery-db"]
-        collection = db["store-product"]
+        db = mongoClient["testdb"]
+        collection = db["items"]
         
         # Perform a query (e.g., find all documents)
         data = collection.find()
@@ -51,7 +51,7 @@ def add_data():
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Get the JSON data from the request
@@ -71,7 +71,7 @@ def update_data(id):
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Get the JSON data from the request
@@ -94,7 +94,7 @@ def delete_data(id):
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Delete the document from the collection
