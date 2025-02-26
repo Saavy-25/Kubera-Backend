@@ -3,6 +3,7 @@ import logging
 import secrets
 import certifi
 from flask import Flask
+from flask_cors import CORS
 from dotenv import load_dotenv
 from flask_login import LoginManager
 from flasgger import Swagger
@@ -10,12 +11,14 @@ from pymongo import MongoClient
 from mongoClient.mongo_routes import mongo_bp
 from Users.auth import auth_bp
 from Users.User import User
+from FlutterService.flutter_routes import flutter_bp
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Initialize flask app and swagger page
 app = Flask(__name__)
+CORS(app)
 app.config['SWAGGER'] = {
     'title': 'Kubera API',
     "specs": [
@@ -29,6 +32,7 @@ swagger = Swagger(app)
 
 # Set secret key for session management
 app.secret_key = secrets.token_hex(16)
+
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
@@ -58,6 +62,7 @@ def load_user(username):
 # Register blueprints
 app.register_blueprint(mongo_bp, url_prefix='/mongo')
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(flutter_bp, url_prefix='/flutter')
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000)

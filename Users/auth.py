@@ -1,15 +1,10 @@
 import os
 from flask import Blueprint, jsonify, request
-from pymongo import MongoClient
-import certifi
 from flask_login import login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
 from .User import User
-
-# Prep Mongo client
-mongo_uri = os.getenv("MONGO_URI")
-mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
+from mongoClient.mongo_client import mongoClient
 
 auth_bp = Blueprint('auth_bp', __name__)
 
@@ -42,7 +37,7 @@ def signup():
         print("unable to add")
         return f"An error occurred: {e}"
 
-@auth_bp.route('/login', methods=['GET'])
+@auth_bp.route('/login', methods=['POST'])
 @swag_from('../swagger/login.yml')
 def login():
     '''Login user using username and password'''

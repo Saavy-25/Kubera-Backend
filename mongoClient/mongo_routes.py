@@ -5,12 +5,7 @@ from pymongo import MongoClient
 import certifi
 import pymongo
 from dotenv import load_dotenv
-
-# Set up MongoDB URI from environment variable
-mongo_uri = os.getenv("MONGO_URI")
-
-# Initialize the MongoDB client Object
-mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
+from mongoClient.mongo_client import mongoClient
 
 # Define mongoDB Blueprint
 mongo_bp = Blueprint('mongo_bp', __name__)
@@ -34,7 +29,7 @@ def get_data():
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Perform a query (e.g., find all documents)
@@ -56,7 +51,7 @@ def add_data():
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Get the JSON data from the request
@@ -76,7 +71,7 @@ def update_data(id):
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Get the JSON data from the request
@@ -99,7 +94,7 @@ def delete_data(id):
             raise ValueError("MongoDB connection is not initialized")
         
         # Access the database and collection
-        db = mongoClient["Test"]
+        db = mongoClient["testdb"]
         collection = db["items"]
         
         # Delete the document from the collection
@@ -111,3 +106,4 @@ def delete_data(id):
         return jsonify({"message": "Data deleted successfully"})
     except Exception as e:
         return f"An error occurred: {e}"
+    

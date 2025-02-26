@@ -1,3 +1,4 @@
+import io
 import os
 from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
@@ -23,10 +24,16 @@ WalmartReceipt = "WalmartReceipt.jpg"
 SamsReceipt = "SamsReceipt.jpg"
 
 # sample document, convert to bytes
-def convertBytes(fileName):
-    with open(fileName, "rb") as image:
-        f = image.read()
-        b = bytearray(f)
+def convertBytes(file):
+    if isinstance(file, str):
+        with open(file, "rb") as image:
+            f = image.read()
+            b = bytearray(f)
+    elif isinstance(file, io.BytesIO):
+        file.seek(0)
+        b = bytearray(file.read())
+    else: 
+        raise TypeError("Invalid input type. Expected str or io.BytesIO.")
     return b
 
 # get key from .env file
