@@ -29,7 +29,12 @@ def process_receipt():
             img_io = io.BytesIO()
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
+
             # TODO: send receipt to mapping pipleine to generalize line items and populate generic matches array
+            
+            for product in receipt.products:
+                # product.product_name = 
+                # product.generic_matches = 
             
             logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
             return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
