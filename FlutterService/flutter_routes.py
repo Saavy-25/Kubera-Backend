@@ -31,8 +31,9 @@ def process_receipt():
             receipt = analyze_receipt(img_io)
 
             # TODO: send receipt to mapping pipleine to generalize line items and populate generic matches array
-            
+
             for product in receipt.products:
+                # can use product.line_item to get product name
                 # product.product_name = 
                 # product.generic_matches = 
             
