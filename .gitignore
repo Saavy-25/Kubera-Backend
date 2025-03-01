@@ -5,8 +5,9 @@
 .venv
 venv
 
-# ignore environment variables
-.env 
+# ignore environment variables and Dockerfile (secrets!)
+.env
+Dockerfile
 
 # ignore any developer updates to config.ini
 /config.ini

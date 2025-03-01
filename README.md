@@ -2,17 +2,21 @@
 
 Run 'pip install -r requirements.txt'
 
-Run DevSetUp.py and add resource keys.
+Run DevSetUp.py
+
+Add MONGO_URI to the generated .env file. 
+Get your mongoDB connection string from mongoDB Atlas. Make sure you put in the correct username and password. 
+
+Add AZURE_RESOURCE_KEY to the .env file.
+
+Add the Mongo_URI and the AZURE_RESOURCE_KEY to the generated Dockerfile.
 
 ## Viewing Doccumentation
 
 View Swagger Doccumentation for API but running app.py and visiting http://127.0.0.1:5000/apidocs/
 
-## Azure Doccument Inteligence Connection
+## Building a Docker Image
 
-Add in images "PublixReceipt.jpg", "TraderJoes.jpg" "SamsReceipt.jpg" and "WalmartReceipt.jpg" to the AzureDIConnection directory before running DIConnection.py file. 
+Make sure to download and begin running Docker on your device.
 
-## MongoDB Connection
-
-Add MONGO_URI to your .env file. 
-Get your mongoDB connection string from mongoDB Atlas. Make sure you put in the correct username and password. 
+Run "docker build . --file Dockerfile --tag my-image-name:$(date +%s)"
