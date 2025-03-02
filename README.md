@@ -15,8 +15,6 @@ Add the Mongo_URI and the AZURE_RESOURCE_KEY to the generated Dockerfile.
 
 View Swagger Doccumentation for API but running app.py and visiting http://127.0.0.1:5000/apidocs/
 
-## Building a Docker Image
+## Development
 
-Make sure to download and begin running Docker on your device.
-
-Run "docker build . --file Dockerfile --tag my-image-name:$(date +%s)"
+Pushes to prod branch will initiate the deployment pipeline.
