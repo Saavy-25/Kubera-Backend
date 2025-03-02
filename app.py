@@ -13,8 +13,6 @@ from Users.auth import auth_bp
 from Users.User import User
 from FlutterService.flutter_routes import flutter_bp
 
-# adding comment here 
-
 # Load environment variables from .env file
 load_dotenv()
 
