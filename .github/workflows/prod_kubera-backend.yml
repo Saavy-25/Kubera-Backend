@@ -2,7 +2,8 @@
 name: Python CI
 
 on:
-  [push]
+  push:
+    branches: ["prod"]
 
 env:
   AZURE_WEBAPP_NAME: Kubera 
