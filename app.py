@@ -35,8 +35,8 @@ swagger = Swagger(app)
 app.secret_key = secrets.token_hex(16)
 
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
+# Set up logging level=logging.DEBUG
+logging.basicConfig()
 
 # Set up MongoDB client- needed for load_user
 mongo_uri = os.getenv("MONGO_URI")
@@ -65,5 +65,6 @@ app.register_blueprint(mongo_bp, url_prefix='/mongo')
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(flutter_bp, url_prefix='/flutter')
 
+# host='0.0.0.0', port=5000
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+    app.run()
