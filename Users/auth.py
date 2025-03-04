@@ -4,21 +4,17 @@ from flask_login import login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
 from .User import User
-from mongoClient.mongo_client import mongoClient
+from mongoClient.mongo_client import MongoConnector
 
 auth_bp = Blueprint('auth_bp', __name__)
+mongoClient = MongoConnector()
 
 @auth_bp.route('/signup', methods=['POST'])
 @swag_from('../swagger/signup.yml')
 def signup():
     '''Add a new user to the usersdb'''
     try:
-        if mongoClient is None:
-            raise ValueError("MongoDB connection is not initialized")
-        
-        # Access the database and collection
-        db = mongoClient["userdb"]
-        collection = db["users"]
+        collection = mongoClient.get_collection(db="userdb", collection="users")
         
         # Get the JSON data from the request, extract the username, add additional fields
         data = request.json
@@ -42,12 +38,7 @@ def signup():
 def login():
     '''Login user using username and password'''
     try:
-        if mongoClient is None:
-            raise ValueError("MongoDB connection is not initialized")
-        
-        # Access the database and collection
-        db = mongoClient["userdb"]
-        collection = db["users"]
+        collection = mongoClient.get_collection(db="userdb", collection="users")
         
         # Get the JSON data from the request
         data = request.json
