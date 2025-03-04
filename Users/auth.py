@@ -4,21 +4,17 @@ from flask_login import login_user, logout_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
 from .User import User
-from mongoClient.mongo_client import mongoClient
+from mongoClient.mongo_client import MongoConnector
 
 auth_bp = Blueprint('auth_bp', __name__)
+mongoClient = MongoConnector()
 
 @auth_bp.route('/signup', methods=['POST'])
 @swag_from('../swagger/signup.yml')
 def signup():
     '''Add a new user to the usersdb'''
     try:
-        if mongoClient is None:
-            raise ValueError("MongoDB connection is not initialized")
-        
-        # Access the database and collection
-        db = mongoClient["userdb"]
-        collection = db["users"]
+        mongoClient.set_collection(db="userdb", collection="users")
         
         # Get the JSON data from the request, extract the username, add additional fields
         data = request.json
@@ -27,10 +23,10 @@ def signup():
         data["listIds"] = []
         data["password"] = generate_password_hash(data["password"])
 
-        if collection.count_documents(query) >= 1:
+        if mongoClient.collection.count_documents(query) >= 1:
             return jsonify({"message": "User id already exists"})
         else:
-            result = collection.insert_one(data)
+            result = mongoClient.collection.insert_one(data)
             return jsonify({"message": "Data added successfully", "id": str(result.inserted_id)})
         
     except Exception as e:
@@ -42,18 +38,13 @@ def signup():
 def login():
     '''Login user using username and password'''
     try:
-        if mongoClient is None:
-            raise ValueError("MongoDB connection is not initialized")
-        
-        # Access the database and collection
-        db = mongoClient["userdb"]
-        collection = db["users"]
+        mongoClient.set_collection(db="userdb", collection="users")
         
         # Get the JSON data from the request
         data = request.json
         query = {"username": str(data["username"])}
 
-        mongo_entry = collection.find_one(query)
+        mongo_entry = mongoClient.collection.find_one(query)
 
         if not mongo_entry:
             return jsonify({"message": "Username not found"})
