@@ -33,7 +33,7 @@ swagger = Swagger(app)
 # Set secret key for session management
 app.secret_key = secrets.token_hex(16)
 
-
+# new deployment 
 # Set up logging level=logging.DEBUG
 logging.basicConfig()
 
@@ -44,6 +44,7 @@ mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
 @app.route("/")
 def home():
     return "Hello, Flask!" 
+
 
 # Initialize login object
 login_manager = LoginManager()
