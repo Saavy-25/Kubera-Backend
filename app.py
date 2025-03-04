@@ -13,7 +13,6 @@ from Users.auth import auth_bp
 from Users.User import User
 from FlutterService.flutter_routes import flutter_bp
 
-#add comment
 # Load environment variables from .env file
 load_dotenv()
 
@@ -44,7 +43,7 @@ mongoClient = MongoClient(mongo_uri, tlsCAFile=certifi.where())
 
 @app.route("/")
 def home():
-    return "Hello, Flask!"
+    return "Hello, Flask!" 
 
 # Initialize login object
 login_manager = LoginManager()
