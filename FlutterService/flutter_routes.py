@@ -63,3 +63,46 @@ def receive_data():
     # Prepare the data to be sent to the Flutter app
     data = {"message": "Hello from the server!"}
     return jsonify(data), 200
+
+@flutter_bp.route('/search_generic', methods=['GET'])
+def search_generic():
+    try:
+        collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
+            
+        query = request.args.get("query")
+        if not query:
+            return jsonify({"error": "Query parameter is required"}), 400
+        
+        agg_pipeline = [
+            {
+                "$search": {
+                    "index": "default",
+                    "autocomplete": {
+                        "query": query,
+                        "path": "genericItem",
+                        "tokenOrder": "any",
+                        "fuzzy": {
+                            "maxEdits": 2,
+                            "prefixLength": 1,
+                            "maxExpansions": 256
+                        }
+                    }
+                }
+            },
+            {"$limit": 20}
+        ]
+
+        results = list(collection.aggregate(agg_pipeline))
+        print('results:', results)
+
+        # Convert ObjectId fields to strings
+        for doc in results:
+            doc["_id"] = str(doc["_id"])
+
+        return jsonify(results), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
+    
+@flutter_bp.route('/search_store', methods=['GET'])
+def search_store():
+    pass
