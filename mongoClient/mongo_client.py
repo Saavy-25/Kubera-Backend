@@ -16,9 +16,9 @@ class MongoConnector:
             cls._instance.collection = None
         return cls._instance
     
-    def set_collection(self, db, collection):
-        self.db = self.client[db]
-        self.collection = self.db[collection]
+    def get_collection(self, db, collection):
+        # Returns a reference to a specific collection to avoid race condition
+        return self.client[db][collection]
 
     def close(self):
         if self.client is not None:

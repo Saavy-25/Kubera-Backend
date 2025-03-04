@@ -46,10 +46,10 @@ def post_receipt():
         logging.debug(f"Data from client: {data}")
         
         # Access the database and collection
-        mongoClient.set_collection(db="receiptsdb", collection="receipts")
+        collection = mongoClient.get_collection(db="receiptsdb", collection="receipts")
         
         # Insert the data into the collection
-        result = mongoClient.collection.insert_one(data)
+        result = collection.insert_one(data)
         logging.debug(f"Data from mongo: {result}")
         
         return jsonify({"status": "success", "data_received": data}), 200

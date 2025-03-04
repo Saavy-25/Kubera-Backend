@@ -22,9 +22,9 @@ def test_mongo():
 def get_data():
     try:
         # Access the database and collection
-        mongoClient.set_collection(db="testdb", collection="items")
+        collection = mongoClient.get_collection(db="testdb", collection="items")
     
-        data = mongoClient.collection.find()
+        data = collection.find()
         
         # Convert the data to a list and return as JSON
         data_list = list(data)
@@ -38,13 +38,13 @@ def get_data():
 @mongo_bp.route('/add_data', methods=['POST'])
 def add_data():
     try:
-        mongoClient.set_collection(db="testdb", collection="items")
+        collection = mongoClient.get_collection(db="testdb", collection="items")
         
         # Get the JSON data from the request
         data = request.json
         
         # Insert the data into the collection
-        result = mongoClient.collection.insert_one(data)
+        result = collection.insert_one(data)
 
         return jsonify({"message": "Data added successfully", "id": str(result.inserted_id)}), 200
     except Exception as e:
@@ -53,13 +53,13 @@ def add_data():
 @mongo_bp.route('/update_data/<id>', methods=['PUT'])
 def update_data(id):
     try:
-        mongoClient.set_collection(db="testdb", collection="items")
+        collection = mongoClient.get_collection(db="testdb", collection="items")
         
         # Get the JSON data from the request
         data = request.json
         
         # Update the document in the collection
-        result = mongoClient.collection.update_one({"_id": ObjectId(id)}, {"$set": data})
+        result = collection.update_one({"_id": ObjectId(id)}, {"$set": data})
         
         if result.matched_count == 0:
             return jsonify({"message": "No document found with the given ID"}), 404
@@ -71,10 +71,10 @@ def update_data(id):
 @mongo_bp.route('/delete_data/<id>', methods=['DELETE'])
 def delete_data(id):
     try:
-        mongoClient.set_collection(db="testdb", collection="items")
+        collection = mongoClient.get_collection(db="testdb", collection="items")
         
         # Delete the document from the collection
-        result = mongoClient.collection.delete_one({"_id": ObjectId(id)})
+        result = collection.delete_one({"_id": ObjectId(id)})
         
         if result.deleted_count == 0:
             return jsonify({"message": "No document found with the given ID"}), 404
@@ -86,7 +86,7 @@ def delete_data(id):
 @mongo_bp.route('/search_generic', methods=['GET'])
 def search_generic():
     try:
-        mongoClient.set_collection(db="grocerydb", collection="genericItems")
+        collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
             
         query = request.args.get("query")
         if not query:
@@ -111,7 +111,7 @@ def search_generic():
             {"$limit": 20}
         ]
 
-        results = list(mongoClient.collection.aggregate(agg_pipeline))
+        results = list(collection.aggregate(agg_pipeline))
         print('results:', results)
 
         # Convert ObjectId fields to strings

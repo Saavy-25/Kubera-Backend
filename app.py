@@ -48,9 +48,9 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(username):
     '''Function required by LoginManager'''
-    mongoClient.set_collection(db="userdb", collection="users")
+    collection = mongoClient.get_collection(db="userdb", collection="users")
     query = {"username": username}
-    mongo_entry = mongoClient.collection.find_one(query)
+    mongo_entry = collection.find_one(query)
     return User(username=mongo_entry["username"], pw=mongo_entry["password"], receipts=mongo_entry["receiptIds"], lists=mongo_entry["listIds"])
 
 # Register blueprints
