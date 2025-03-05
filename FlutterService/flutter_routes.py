@@ -3,12 +3,13 @@ from PIL import Image
 from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
-from mongoClient.mongo_client import mongoClient
+from mongoClient.mongo_client import MongoConnector
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
 
 flutter_bp = Blueprint('flutter_bp', __name__)
+mongoClient = MongoConnector()
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -45,8 +46,7 @@ def post_receipt():
         logging.debug(f"Data from client: {data}")
         
         # Access the database and collection
-        db = mongoClient["receiptdb"]
-        collection = db["receipts"]
+        collection = mongoClient.get_collection(db="receiptsdb", collection="receipts")
         
         # Insert the data into the collection
         result = collection.insert_one(data)
