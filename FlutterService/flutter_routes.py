@@ -108,8 +108,8 @@ def search_generic():
     except Exception as e:
         return f"An error occurred: {e}", 400
     
-@flutter_bp.route('/search_storeProducts', methods=['POST'])
-def search_storeProducts():
+@flutter_bp.route('/get_storeProducts', methods=['POST'])
+def get_storeProducts():
     try:
         collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
         
@@ -121,7 +121,7 @@ def search_storeProducts():
         if data["productIds"] == []:
             return jsonify({"info": "No product of this type has been submitted"}), 200
 
-        cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}).project({ "_id": 0 }) # Excluding _id field from documents returned
+        cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}, {'_id': 0}) # Excluding _id field from documents returned
         results = list(cur)
 
         return jsonify(results), 200
