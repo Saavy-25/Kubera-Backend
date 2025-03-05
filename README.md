@@ -2,9 +2,9 @@
 
 Run the following commands to set up local development environment
 
-`'pip install -r requirements.txt'
+`'pip install -r requirements.txt'`
 
-`python DevSetUp.py
+`python DevSetUp.py`
 
 Add MONGO_URI to your .env file. 
 Get your mongoDB connection string from mongoDB Atlas. Make sure you put in the correct username and password.
