@@ -1,5 +1,7 @@
 import logging
 from PIL import Image
+from bson import ObjectId
+from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
@@ -94,13 +96,34 @@ def search_generic():
 
         results = list(collection.aggregate(agg_pipeline))
 
-        # Convert ObjectId fields to strings
         for doc in results:
             doc["_id"] = str(doc["_id"])
+
+            # If productIds become large, only send back _id and generalItem fields, then use the _id to query for productIds?
             if "productIds" in doc:
                 doc["productIds"] = [str(id) for id in doc["productIds"]]
 
         print(results)
+        return jsonify(results), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
+    
+@flutter_bp.route('/search_storeProducts', methods=['POST'])
+def search_storeProducts():
+    try:
+        collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 401
+        if "productIds" not in data:
+            return jsonify({"error": "productIds field is required"}), 401
+        if data["productIds"] == []:
+            return jsonify({"info": "No product of this type has been submitted"}), 200
+
+        cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}).project({ "_id": 0 }) # Excluding _id field from documents returned
+        results = list(cur)
+
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
