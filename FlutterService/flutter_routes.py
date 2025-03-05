@@ -80,10 +80,10 @@ def search_generic():
                     "autocomplete": {
                         "query": query,
                         "path": "genericItem",
-                        "tokenOrder": "any",
+                        "tokenOrder": "sequential",
                         "fuzzy": {
-                            "maxEdits": 2,
-                            "prefixLength": 1,
+                            "maxEdits": 1,
+                            "prefixLength": 2,
                             "maxExpansions": 256
                         }
                     }
