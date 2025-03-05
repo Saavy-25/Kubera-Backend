@@ -93,16 +93,14 @@ def search_generic():
         ]
 
         results = list(collection.aggregate(agg_pipeline))
-        print('results:', results)
 
         # Convert ObjectId fields to strings
         for doc in results:
             doc["_id"] = str(doc["_id"])
+            if "productIds" in doc:
+                doc["productIds"] = [str(id) for id in doc["productIds"]]
 
+        print(results)
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
-    
-@flutter_bp.route('/search_store', methods=['GET'])
-def search_store():
-    pass
