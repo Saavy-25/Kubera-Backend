@@ -78,23 +78,54 @@ def search_generic():
         agg_pipeline = [
             {
                 "$search": {
-                    "index": "default",
-                    "autocomplete": {
-                        "query": query,
-                        "path": "genericItem",
-                        "tokenOrder": "sequential",
-                        "fuzzy": {
-                            "maxEdits": 1,
-                            "prefixLength": 2,
-                            "maxExpansions": 256
-                        }
+                    "compound": {
+                        "should": [
+                            {
+                                "autocomplete": {
+                                    "query": query,
+                                    "path": "genericItem",
+                                    "tokenOrder": "any",
+                                    "fuzzy": {
+                                        "maxEdits": 1,
+                                        "maxExpansions": 100
+                                    },
+                                }
+                            },
+                            {
+                                "text": {
+                                    "query": query,
+                                    "path": "genericItem",
+                                    "fuzzy": {
+                                        "maxEdits": 1,
+                                        "maxExpansions": 100
+                                    }
+                                }
+                            }
+                        ],
+                        "minimumShouldMatch": 1
                     }
                 }
             },
-            {"$limit": 20}
+            {
+                "$limit": 10
+            },
+            {
+                "$project":
+                {
+                    "genericItem": 1,
+                    "_id": 1,
+                    "score": {"$meta": "searchScore"},
+                }
+            },
+            {
+                "$sort": {
+                    "score": -1
+                }
+            }
         ]
 
         results = list(collection.aggregate(agg_pipeline))
+        print(results)
 
         for doc in results:
             doc["_id"] = str(doc["_id"])
