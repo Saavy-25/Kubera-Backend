@@ -103,7 +103,6 @@ def search_generic():
             if "productIds" in doc:
                 doc["productIds"] = [str(id) for id in doc["productIds"]]
 
-        print(results)
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
@@ -119,7 +118,7 @@ def get_storeProducts():
         if "productIds" not in data:
             return jsonify({"error": "productIds field is required"}), 401
         if data["productIds"] == []:
-            return jsonify({"info": "No product of this type has been submitted"}), 200
+            return jsonify({"error": "No productId provided"}), 401
 
         cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}, {'_id': 0, 'genericItemIds': 0}) # Excluding _id field from documents returned
         results = list(cur)
