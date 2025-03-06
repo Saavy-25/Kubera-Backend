@@ -4,27 +4,20 @@ from azure.core.credentials import AzureKeyCredential
 from azure.ai.documentintelligence import DocumentIntelligenceClient
 from azure.ai.documentintelligence.models import AnalyzeResult
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
-
 from dotenv import load_dotenv
-
-import sys
-from flask import jsonify
-
-# Add the parent directory to sys.path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-
-# Import the modules
+# Import the models
 from Grocery.StoreProduct import StoreProduct
 from Grocery.Receipt import Receipt
 
-endpoint = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
-PublixReceipt = "PublixReceipt.jpg"
-TraderJoesReceipt = "TraderJoesReceipt.jpg"
-WalmartReceipt = "WalmartReceipt.jpg"
-SamsReceipt = "SamsReceipt.jpg"
+ENDPOINT = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
+PUBLIXRECEIPT = "PublixReceipt.jpg"
+TRADERJOESRECEIPT = "TraderJoesReceipt.jpg"
+WALMARTRECEIPT = "WalmartReceipt.jpg"
+SAMSRECEIPT = "SamsReceipt.jpg"
 
 # sample document, convert to bytes
-def convertBytes(file):
+def convert_bytes(file):
+    '''convert file type to byte string'''
     if isinstance(file, str):
         with open(file, "rb") as image:
             f = image.read()
@@ -37,7 +30,8 @@ def convertBytes(file):
     return b
 
 # get key from .env file
-def getKey():
+def get_key():
+    '''get the Azure resource key'''
     load_dotenv()
     return os.getenv("AZURE_RESOURCE_KEY")
 
@@ -45,9 +39,10 @@ def getKey():
 # https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/how-to-guides/use-sdk-rest-api?view=doc-intel-4.0.0&tabs=windows&pivots=programming-language-python
 
 def analyze_receipt(r):
-    client = DocumentIntelligenceClient(endpoint=endpoint, credential=AzureKeyCredential(getKey()))
+    '''create receipt object from receipt scan'''
+    client = DocumentIntelligenceClient(endpoint=ENDPOINT, credential=AzureKeyCredential(get_key()))
 
-    poller = client.begin_analyze_document("prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=convertBytes(r)), locale="en-US")
+    poller = client.begin_analyze_document("prebuilt-receipt", AnalyzeDocumentRequest(bytes_source=convert_bytes(r)), locale="en-US")
     receipts: AnalyzeResult = poller.result()
 
     if receipts.documents:
@@ -55,6 +50,7 @@ def analyze_receipt(r):
             if receipt.fields:
                 merchant_name = receipt.fields.get("MerchantName").get('valueString')
                 transaction_date = receipt.fields.get("TransactionDate").get('valueDate')
+                address = receipt.fields.get("MerchantAddress").get('valueAddress')
 
                 items = receipt.fields.get("Items")
                 products = []
@@ -69,12 +65,26 @@ def analyze_receipt(r):
                         else:
                             item_description = "None"
                         
-                        item_quantity = item.get("valueObject").get("Quantity")
+                        count = item.get("valueObject").get("Quantity")
 
-                        if item_quantity:
-                            item_quantity = item_quantity.get('valueString')
+                        if count:
+                             count = count.get('valueNumber')
                         else:
-                            item_quantity = "None"
+                            count = "None"
+                        
+                        unit = item.get("valueObject").get("QuantityUnit")
+
+                        # if unit:
+                        #     unit = unit.get('valueString')
+                        # else:
+                        #     unit = "None"
+                        
+                        unit_price = item.get("valueObject").get("Price")
+
+                        if unit_price:
+                            unit_price = unit_price.get('valueCurrency').get('amount')
+                        else:
+                            unit_price = "None"
                         
                         item_total_price = item.get("valueObject").get("TotalPrice")
 
@@ -83,13 +93,6 @@ def analyze_receipt(r):
                         else:
                             item_total_price = "None"
 
-                        products.append(StoreProduct(line_item=item_description, unit=item_quantity, price=item_total_price, date=transaction_date))
+                        products.append(StoreProduct(line_item=item_description, count=count, unit=unit, unit_price=unit_price, total_price=item_total_price))
 
-                return Receipt(store_name=merchant_name, date=transaction_date, products=products)
-
-if __name__ == "__main__":
-    r = analyze_receipt(SamsReceipt)
-    r.print()
-
-    # testing dictionary conversion
-    # print(r.getMap())
+                return Receipt(store_name=merchant_name, date=transaction_date, store_address=address, products=products)
