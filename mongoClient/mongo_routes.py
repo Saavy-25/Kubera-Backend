@@ -29,7 +29,6 @@ def get_data():
         data_list = list(data)
         for item in data_list:
             item["_id"] = str(item["_id"])
-            item["_id"] = str(item["_id"])
         
         return jsonify(data_list), 200
     except Exception as e:
@@ -78,7 +77,6 @@ def delete_data(id):
         
         if result.deleted_count == 0:
             return jsonify({"message": "No document found with the given ID"}), 404
-        
         return jsonify({"message": "Data deleted successfully"}), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
