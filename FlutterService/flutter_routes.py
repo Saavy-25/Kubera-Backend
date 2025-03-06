@@ -1,5 +1,7 @@
 import logging
 from PIL import Image
+from bson import ObjectId
+from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
@@ -63,3 +65,95 @@ def receive_data():
     # Prepare the data to be sent to the Flutter app
     data = {"message": "Hello from the server!"}
     return jsonify(data), 200
+
+@flutter_bp.route('/search_generic', methods=['GET'])
+def search_generic():
+    try:
+        collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
+            
+        query = request.args.get("query")
+        if not query:
+            return jsonify({"error": "Query parameter is required"}), 400
+        
+        agg_pipeline = [
+            {
+                "$search": {
+                    "compound": {
+                        "should": [
+                            {
+                                "autocomplete": {
+                                    "query": query,
+                                    "path": "genericItem",
+                                    "tokenOrder": "any",
+                                    "fuzzy": {
+                                        "maxEdits": 1,
+                                        "maxExpansions": 100
+                                    },
+                                }
+                            },
+                            {
+                                "text": {
+                                    "query": query,
+                                    "path": "genericItem",
+                                    "fuzzy": {
+                                        "maxEdits": 1,
+                                        "maxExpansions": 100
+                                    }
+                                }
+                            }
+                        ],
+                        "minimumShouldMatch": 1
+                    }
+                }
+            },
+            {
+                "$limit": 10
+            },
+            {
+                "$project":
+                {
+                    "genericItem": 1,
+                    "_id": 1,
+                    "score": {"$meta": "searchScore"},
+                }
+            },
+            {
+                "$sort": {
+                    "score": -1
+                }
+            }
+        ]
+
+        results = list(collection.aggregate(agg_pipeline))
+        print(results)
+
+        for doc in results:
+            doc["_id"] = str(doc["_id"])
+
+            # If productIds become large, only send back _id and generalItem fields, then use the _id to query for productIds?
+            if "productIds" in doc:
+                doc["productIds"] = [str(id) for id in doc["productIds"]]
+
+        return jsonify(results), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
+    
+@flutter_bp.route('/get_storeProducts', methods=['POST'])
+def get_storeProducts():
+    try:
+        collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body is required"}), 401
+        if "productIds" not in data:
+            return jsonify({"error": "productIds field is required"}), 401
+        if data["productIds"] == []:
+            return jsonify({"error": "No productId provided"}), 401
+
+        cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}, {'_id': 0, 'genericItemIds': 0}) # Excluding _id field from documents returned
+        results = list(cur)
+
+        return jsonify(results), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
