@@ -5,8 +5,9 @@ class Receipt:
         self.sk = "None" # date#store
         self.store_name = store_name
         self.store_address = store_address
-        self.products = products #list of product objects
         self.date = date
+        self.products = products #list of product objects
+        # Add receipt total
 
     def print(self) -> None:
         '''print info stores in model'''
@@ -25,6 +26,7 @@ class Receipt:
             "pk": self.pk,
             "sk": self.sk,
             "store_name": self.store_name,
+            "address": self.store_address,
             "date": self.date, 
             "products": [product.__dict__ for product in self.products]
         }

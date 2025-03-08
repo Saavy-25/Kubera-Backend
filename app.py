@@ -51,7 +51,7 @@ def load_user(username):
     collection = mongoClient.get_collection(db="userdb", collection="users")
     query = {"username": username}
     mongo_entry = collection.find_one(query)
-    return User(username=mongo_entry["username"], pw=mongo_entry["password"], receipts=mongo_entry["receiptIds"], lists=mongo_entry["listIds"])
+    return User(username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
 
 # Register blueprints
 app.register_blueprint(mongo_bp, url_prefix='/mongo')
