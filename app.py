@@ -4,6 +4,10 @@ import secrets
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv() # Load before access
+
 from flask_login import LoginManager
 from flasgger import Swagger
 from mongoClient.mongo_routes import mongo_bp
@@ -11,6 +15,7 @@ from mongoClient.mongo_client import MongoConnector
 from Users.auth import auth_bp
 from Users.User import User
 from FlutterService.flutter_routes import flutter_bp
+
 
 # Initialize flask app and swagger page
 app = Flask(__name__)
