@@ -1,0 +1,6 @@
+.openai_api_key
+.map_prompt
+.decode_prompt
+.venv
+.map_prompt_cache.json
+.decode_prompt_cache.json
