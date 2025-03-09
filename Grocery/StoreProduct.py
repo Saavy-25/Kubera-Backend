@@ -1,9 +1,9 @@
 class StoreProduct:
-    def __init__(self, line_item="", count=1, unit="", unit_price="", total_price="") -> None:
+    def __init__(self, line_item="", count=1, total_price=0.0) -> None:
         self.line_item = line_item #abbreviation not decoded
         self.count = count # count purchaced
-        self.unit = unit # unit of measurement
-        self.unit_price = unit_price # price for an individual unit
+        # self.unit = unit # unit of measurement
+        # self.unit_price = unit_price # price for an individual unit
         self.total_price = total_price # total price for line item
         
         self.id = None #_id in mongo
@@ -16,8 +16,8 @@ class StoreProduct:
         print("Id: ", self.id)
         print("Line Item: ", self.line_item)
         print("Count: ", self.count)
-        print("Unit: ", self.unit)
-        print("Unit Price: ", self.unit_price)
+        # print("Unit: ", self.unit)
+        # print("Unit Price: ", self.unit_price)
         print("Total Price: ", self.total_price)
         print("Generic Matches: ", self.generic_matches)
         print("Store Product Name: ", self.store_product_name)

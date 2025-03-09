@@ -59,6 +59,7 @@ def analyze_receipt(r):
                 if items:
                     for item in items.get("valueArray"):
                         
+                        #get the line item (abreviated name)
                         item_description = item.get("valueObject").get("Description")
 
                         if item_description:
@@ -66,34 +67,36 @@ def analyze_receipt(r):
                         else:
                             item_description = "None"
                         
+                        # get the count of items associated with the line items, set to 1 if not detected
                         count = item.get("valueObject").get("Quantity")
 
                         if count:
                              count = count.get('valueNumber')
                         else:
-                            count = "None"
+                            count = 1
                         
-                        unit = item.get("valueObject").get("QuantityUnit")
+                        # the the unit of measurement for the line item
+                        # unit = item.get("valueObject").get("QuantityUnit")
 
                         # if unit:
-                        #     unit = unit.get('valueString')
-                        # else:
-                        #     unit = "None"
+                        #      unit = unit.get('valueString')
                         
-                        unit_price = item.get("valueObject").get("Price")
+                        # # get the unit price
+                        # unit_price = item.get("valueObject").get("Price")
 
-                        if unit_price:
-                            unit_price = unit_price.get('valueCurrency').get('amount')
-                        else:
-                            unit_price = "None"
+                        # if unit_price:
+                        #     unit_price = unit_price.get('valueCurrency').get('amount')
+                        # else:
+                        #     unit_price = None
                         
+                        # get the total price for the line item
                         item_total_price = item.get("valueObject").get("TotalPrice")
 
                         if item_total_price:
                             item_total_price = item_total_price.get('valueCurrency').get('amount')
                         else:
-                            item_total_price = "None"
+                            item_total_price = None
 
-                        products.append(StoreProduct(line_item=item_description, count=count, unit=unit, unit_price=unit_price, total_price=item_total_price))
+                        products.append(StoreProduct(line_item=item_description, count=count, total_price=item_total_price))
 
                 return Receipt(store_name=merchant_name, date=transaction_date, store_address=address, total_receipt_price=total, products=products)
