@@ -15,8 +15,8 @@ from AzureDIConnection.DIConnection import analyze_receipt
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
-decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
-map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
+# decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
+# map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
 
 mongoClient = MongoConnector()
 
@@ -42,16 +42,16 @@ def process_receipt():
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
 
-            # get line_item list
-            line_items = [product.line_item for product in receipt.products]
-            # get decoded name list
-            product_names = decode_processor.processNames(line_items)
-            # write results
-            for product, decoded_name in zip(receipt.products, product_names):
-                product.product_name = decoded_name
+            # # get line_item list
+            # line_items = [product.line_item for product in receipt.products]
+            # # get decoded name list
+            # product_names = decode_processor.processNames(line_items)
+            # # write results
+            # for product, decoded_name in zip(receipt.products, product_names):
+            #     product.product_name = decoded_name
                                           
-            logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
-            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
+            logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
+            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
     except Exception as e:
         logging.error(f"Error processing receipt: {e}")
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500

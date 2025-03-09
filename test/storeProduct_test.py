@@ -21,7 +21,7 @@ def test_process_receipt():
     assert p.generic_matches == None
     assert p.generic_id == None
 
-def no_count():
+def test_no_count():
     '''test count set to None'''
     error_raised = False
 
@@ -32,7 +32,7 @@ def no_count():
     
     assert error_raised
 
-def no_price():
+def test_no_price():
     '''test count set to None'''
     error_raised = False
 
@@ -43,7 +43,7 @@ def no_price():
     
     assert error_raised
 
-def illegal_count():
+def test_illegal_count():
     '''negative count'''
     error_raised = False
 
@@ -54,7 +54,7 @@ def illegal_count():
     
     assert error_raised
 
-def illegal_price():
+def test_illegal_price():
     '''negative price'''
     error_raised = False
 

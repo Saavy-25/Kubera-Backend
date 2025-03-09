@@ -4,8 +4,10 @@ class StoreProduct:
         self.count = count
         self.total_price = total_price
 
+        if not isinstance(count, int) or not isinstance(total_price, float):
+            raise ValueError("Count must be an integer. Total price must be a float.")
         if count < 0:
-            raise ValueError(str("Count must be greater or equal to 1 to create a store product, attempted with " + count))
+            raise ValueError(str("Count must be greater or equal to 1 to create a store product"))
         if total_price < 0.0:
             raise ValueError("Valid price required to create a store product")
 
