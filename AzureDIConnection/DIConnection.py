@@ -51,6 +51,7 @@ def analyze_receipt(r):
                 merchant_name = receipt.fields.get("MerchantName").get('valueString')
                 transaction_date = receipt.fields.get("TransactionDate").get('valueDate')
                 address = receipt.fields.get("MerchantAddress").get('valueAddress')
+                total = receipt.fielfs.get("Total").get('valueCurrency').get('amount')
 
                 items = receipt.fields.get("Items")
                 products = []
@@ -95,4 +96,4 @@ def analyze_receipt(r):
 
                         products.append(StoreProduct(line_item=item_description, count=count, unit=unit, unit_price=unit_price, total_price=item_total_price))
 
-                return Receipt(store_name=merchant_name, date=transaction_date, store_address=address, products=products)
+                return Receipt(store_name=merchant_name, date=transaction_date, store_address=address, total_receipt_price=total, products=products)

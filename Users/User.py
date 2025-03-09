@@ -10,8 +10,8 @@ class User(UserMixin):
         self.shopping_list_ids = shopping_list_ids if receipt_ids is not None else []
         self.favorite_store_ids = favorite_store_ids if receipt_ids is not None else []
 
-    def mongo_entry(self):
-        '''return user object as a dictionary'''
+    def get_mongo_entry(self):
+        '''return dictionary formatted for database'''
         return {
             "username": self.username,
             "password": self.password,

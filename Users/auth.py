@@ -26,7 +26,7 @@ def signup():
             data["password"] = generate_password_hash(data["password"])
             new_user = User(username=data["username"], password=data["password"])
 
-            collection.insert_one(new_user.mongo_entry())
+            collection.insert_one(new_user.get_mongo_entry())
             return jsonify({"message": "User added successfully"})
         
     except Exception as e:

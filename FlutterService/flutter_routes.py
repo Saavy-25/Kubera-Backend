@@ -32,8 +32,8 @@ def process_receipt():
             img_io = io.BytesIO()
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
-            logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
-            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
+            logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
+            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
     except Exception as e:
         logging.error(f"Error processing receipt: {e}")
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500
