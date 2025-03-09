@@ -1,23 +1,28 @@
 class StoreProduct:
-    def __init__(self, line_item="", count=1, total_price=0.0) -> None:
-        self.line_item = line_item #abbreviation not decoded
-        self.count = count # count purchaced
-        # self.unit = unit # unit of measurement
-        # self.unit_price = unit_price # price for an individual unit
-        self.total_price = total_price # total price for line item
-        
-        self.id = None #_id in mongo
-        self.generic_matches = None
-        self.store_product_name = None #determined by aberviation expansion service
-        self.generic_id = None #should be verified by user before filled in
+    def __init__(self, line_item, count, total_price, store_name=None, recent_prices=None, _id=None, store_product_name=None, generic_matches=None, generic_id=None) -> None:
+        self.line_item = line_item
+        self.count = count
+        self.total_price = total_price
+
+        if count < 0:
+            raise ValueError(str("Count must be greater or equal to 1 to create a store product, attempted with " + count))
+        if total_price < 0.0:
+            raise ValueError("Valid price required to create a store product")
+
+        self.price_per_count = round( float(self.total_price)/ self.count, 2)
+
+        self.store_name = store_name
+        self.recent_prices = recent_prices
+        self.id = _id #_id in mongo
+        self.store_product_name = store_product_name # expanded name
+        self.generic_matches = generic_matches
+        self.generic_id = generic_id
 
     def print(self) -> None:
         '''print info stored in model'''
         print("Id: ", self.id)
         print("Line Item: ", self.line_item)
         print("Count: ", self.count)
-        # print("Unit: ", self.unit)
-        # print("Unit Price: ", self.unit_price)
         print("Total Price: ", self.total_price)
         print("Generic Matches: ", self.generic_matches)
         print("Store Product Name: ", self.store_product_name)
@@ -26,10 +31,8 @@ class StoreProduct:
 
     def mongo_receipt_entry(self) -> dict:
         '''return object as a dictionary for use in mongo receipts collection'''
-        price_per_count = round( float(self.total_price)/ self.count, 2)
-
         return {
-            "pricePerCount": price_per_count,
+            "pricePerCount": self.price_per_count,
             "storeProductId": self.id,
             "count": self.count
         }
