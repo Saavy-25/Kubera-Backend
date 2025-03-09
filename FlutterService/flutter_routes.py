@@ -6,7 +6,6 @@ from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
 from Grocery.StoreProduct import StoreProduct
-from mongoClient.mongo_client import mongoClient
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
 
