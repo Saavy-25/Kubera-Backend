@@ -50,8 +50,8 @@ def process_receipt():
             for product, decoded_name in zip(receipt.products, product_names):
                 product.product_name = decoded_name
                                           
-            logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
-            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
+            logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
+            return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
     except Exception as e:
         logging.error(f"Error processing receipt: {e}")
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500
@@ -62,19 +62,28 @@ def map_receipt():
     # TODO align with frontend request
     try:
         data = request.get_json()
+        required_fields = ['store_name', 'date', 'products', 'store_address', 'total_receipt_price']
+
         if not data:
             return jsonify({'error': 'Invalid input, JSON required'}), 500
+        if required_fields not in data:
+            return jsonify({'error': 'Missing required receipt fields'}), 500
+        for field in required_fields:
+            if data.get(field) == "" or data.get(field) is None:
+                return jsonify({'error': 'Required fields cannot be empty'}), 500
         
         # Extract receipt details from JSON
-        store_name = data.get('store_name', "")
-        date = data.get('date', "")
-        product_list = data.get('products', [])
+        store_name = data.get('store_name')
+        date = data.get('date')
+        products = data.get('products')
+        store_address = data.get('store_address')
+        total_receipt_price = data.get('total_receipt_price')
         
         # Convert JSON product data into StoreProduct objects
-        products = [StoreProduct(**product) for product in product_list]
+        products = [StoreProduct(**product) for product in products]
         
         # Create a Receipt instance
-        receipt = Receipt(store_name=store_name, date=date, products=products)
+        receipt = Receipt(store_name=store_name, date=date, products=products, store_address=store_address, total_receipt_price=total_receipt_price)
         # get product_name list
         product_names = [product.product_name for product in receipt.products]
         # get mapped name list
@@ -83,8 +92,8 @@ def map_receipt():
         for product, mapped_name in zip(receipt.products, generic_names):
             product.generic_name = mapped_name
                                           
-        logging.debug(f"Processed receipt: {Receipt.getMap(receipt)}")
-        return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.getMap(receipt)}), 200
+        logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
+        return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
        
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
