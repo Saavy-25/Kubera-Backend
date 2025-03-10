@@ -1,6 +1,7 @@
 import openai
 import json
 from openai import OpenAI
+from rapidfuzz import process, fuzz
 
 class NameProcessor:
     def __init__(self, prompt_path, batch_size = 5, debug_print = True): 
@@ -52,7 +53,7 @@ class NameProcessor:
 
         return name_list
     
-    def __check_cached_names(self, product_name_list):
+    def __check_cached_names(self, product_name_list, threshold = 80):
         # if item is cached, get the result, otherwise return a new list to check with API
         new_product_name_list = []
         index_list = []
@@ -62,9 +63,17 @@ class NameProcessor:
             if name in self.cache:
                 index_list.append(index)
                 cached_list.append(self.cache[name])
+
             # not in cache
             else:
-                new_product_name_list.append(name)
+                # fuzzy search
+                best_match, score, _ = process.extractOne(name, self.cache.keys(), scorer=fuzz.ratio)
+                              
+                if best_match and score >= threshold: # close match found  
+                    index_list.append(index)
+                    cached_list.append(self.cache[best_match])
+                else: # no close match found  
+                    new_product_name_list.append(name)  
         
         return index_list, cached_list, new_product_name_list 
         
@@ -98,13 +107,19 @@ class NameProcessor:
             json.dump(self.cache, file)
 
 def main():
-    # sample usage
+    # sample usage decode receipt product names
     my_decoder = NameProcessor(prompt_path="NameProcessing/.decode_prompt")
     product_list = ["S/MTN.BNLS BREAST", "FZN ORGANIC GREEN BEANS", "Milk Half Gal Almond Unsweeten", "PUB DICED TOMATOES", "PEPPERS GREEN BELL", "BELL PEPPERS RED"]
     decoded_list = my_decoder.processNames(product_name_list=product_list)
     print(f"Final decoded list: {decoded_list}")
 
-     # sample usage
+    # sample usage fuzzy cache
+    my_decoder = NameProcessor(prompt_path="NameProcessing/.decode_prompt")
+    product_list = ["S/MTN.BNLS BREEST", "FZN DRGANIC GREEN BEDNS", "Milk Half Gall Almond Unsweeten", "PU DICED TOMATOES", "PEPPERS GREEN BELLL", "BLL PEPPERS RD"]
+    decoded_list = my_decoder.processNames(product_name_list=product_list)
+    print(f"Final decoded list: {decoded_list}")
+
+     # sample usage map decoded names to generic items
     my_mapper = NameProcessor(prompt_path="NameProcessing/.map_prompt")
     product_list = ["Boneless Chicken Breast", "Organic Green Beans", "Unsweetened Almond Milk", "Diced Tomatoes", "Green Bell Peppers", "Red Bell Peppers"]
     item_list = my_mapper.processNames(product_name_list=product_list)
