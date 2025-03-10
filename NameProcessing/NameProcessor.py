@@ -1,6 +1,8 @@
 import openai
+import os
 import json
 from openai import OpenAI
+from dotenv import load_dotenv
 from rapidfuzz import process, fuzz
 
 class NameProcessor:
@@ -91,8 +93,8 @@ class NameProcessor:
         return completion.choices[0].message.content
     
     def __get_api_key(self):
-        with open("NameProcessing/.openai_api_key", "r") as file:
-            return file.read().strip()
+        load_dotenv()
+        return os.getenv("OPENAI_API_KEY")
     def __get_base_prompt(self, prompt_path):
         with open(prompt_path, "r") as file:
             return file.read().strip()
