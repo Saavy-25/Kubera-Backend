@@ -15,8 +15,8 @@ from AzureDIConnection.DIConnection import analyze_receipt
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
-# decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
-# map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
+decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
+map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
 
 mongoClient = MongoConnector()
 
@@ -42,13 +42,13 @@ def process_receipt():
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
 
-            # # get line_item list
-            # line_items = [product.line_item for product in receipt.products]
-            # # get decoded name list
-            # product_names = decode_processor.processNames(line_items)
-            # # write results
-            # for product, decoded_name in zip(receipt.products, product_names):
-            #     product.product_name = decoded_name
+            # get line_item list
+            line_items = [product.line_item for product in receipt.products]
+            # get decoded name list
+            product_names = decode_processor.processNames(line_items)
+            # write results
+            for product, decoded_name in zip(receipt.products, product_names):
+                product.product_name = decoded_name
                                           
             logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
             return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -85,12 +85,12 @@ def map_receipt():
         # Create a Receipt instance
         receipt = Receipt(store_name=store_name, date=date, products=products, store_address=store_address, total_receipt_price=total_receipt_price)
         # get product_name list
-        # product_names = [product.product_name for product in receipt.products]
-        # # get mapped name list
-        # generic_names = map_processor.processNames(product_names)
-        # # write results
-        # for product, mapped_name in zip(receipt.products, generic_names):
-        #     product.generic_name = mapped_name
+        product_names = [product.product_name for product in receipt.products]
+        # get mapped name list
+        generic_names = map_processor.processNames(product_names)
+        # write results
+        for product, mapped_name in zip(receipt.products, generic_names):
+            product.generic_name = mapped_name
                                           
         logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
         return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
