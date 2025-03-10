@@ -19,15 +19,15 @@ def signup():
         # Get the JSON data from the request, extract the username, add additional fields
         data = request.json
         query = {"username": str(data["username"])}
-        data["receiptIds"] = []
-        data["listIds"] = []
-        data["password"] = generate_password_hash(data["password"])
 
-        if collection.count_documents(query) >= 1:
+        if collection.count_documents(query) > 0:
             return jsonify({"message": "User id already exists"})
         else:
-            result = collection.insert_one(data)
-            return jsonify({"message": "Data added successfully", "id": str(result.inserted_id)})
+            data["password"] = generate_password_hash(data["password"])
+            new_user = User(username=data["username"], password=data["password"])
+
+            collection.insert_one(new_user.get_mongo_entry())
+            return jsonify({"message": "User added successfully"})
         
     except Exception as e:
         print("unable to add")
@@ -52,13 +52,13 @@ def login():
         if not check_password_hash(mongo_entry["password"], data["password"]):
             return jsonify({"message": "Incorrect password"})
         else:
-            login_user(User(username=mongo_entry["username"], pw=mongo_entry["password"], receipts=mongo_entry["receiptIds"], lists=mongo_entry["listIds"]))
+            login_user(User(username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"]))
             return jsonify({"message": "Login successful"})
         
     except Exception as e:
         return f"An error occurred: {e}"
 
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 @swag_from('../swagger/logout.yml')
 def logout():
     '''Logout user'''
