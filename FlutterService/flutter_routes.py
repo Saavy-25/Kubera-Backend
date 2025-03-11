@@ -97,7 +97,7 @@ def map_receipt():
                                     "$search": {
                                         "text": {
                                             "query": name,
-                                            "path": "genericItem",
+                                            "path": "genericName",
                                             "fuzzy": {
                                                 "maxEdits": 1,
                                                 "maxExpansions": 100
@@ -108,7 +108,7 @@ def map_receipt():
                                 {"$limit": 3}, # top 3 matches
                                 {
                                     "$project": {
-                                        "genericItem": 1,
+                                        "genericName": 1,
                                         "_id": 0,
                                         "score": {"$meta": "searchScore"},
                                     }
@@ -120,7 +120,7 @@ def map_receipt():
 
         # write results
         for i, name in enumerate(generic_names):
-            top_generic_names = [result['genericItem'] for result in query_results]
+            top_generic_names = [result['genericName'] for result in query_results]
             receipt.products[i].generic_name = top_generic_names
                                           
         logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
@@ -174,7 +174,7 @@ def search_generic():
                             {
                                 "autocomplete": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "tokenOrder": "any",
                                     "fuzzy": {
                                         "maxEdits": 1,
@@ -185,7 +185,7 @@ def search_generic():
                             {
                                 "text": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "fuzzy": {
                                         "maxEdits": 1,
                                         "maxExpansions": 100
@@ -203,7 +203,7 @@ def search_generic():
             {
                 "$project":
                 {
-                    "genericItem": 1,
+                    "genericName": 1,
                     "_id": 1,
                     "score": {"$meta": "searchScore"},
                 }
