@@ -27,7 +27,7 @@ def test_no_count():
 
     try:
         p = StoreProduct("BUTTER CHICKEN W/BASMATI", None, 8.98)
-    except ValueError:
+    except TypeError:
         error_raised = True
     
     assert error_raised
@@ -38,7 +38,7 @@ def test_no_price():
 
     try:
         p = StoreProduct("BUTTER CHICKEN W/BASMATI", 2, None)
-    except ValueError:
+    except TypeError:
         error_raised = True
     
     assert error_raised

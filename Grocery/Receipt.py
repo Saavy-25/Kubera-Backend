@@ -21,6 +21,7 @@ class Receipt:
 
     def get_map(self):
          '''convert model to map for use in jsonify() when getting receipt scan confirmation'''
+
          return{
             "store_name": self.store_name,
             "store_address": dict(self.store_address),

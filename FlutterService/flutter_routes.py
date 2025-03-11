@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
 from Grocery.StoreProduct import StoreProduct
-from NameProcessing.NameProcessor import NameProcessor
+# from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
 
 
@@ -15,8 +15,8 @@ from AzureDIConnection.DIConnection import analyze_receipt
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
-decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
-map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
+# decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
+# map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
 
 mongoClient = MongoConnector()
 
@@ -42,13 +42,13 @@ def process_receipt():
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
 
-            # get line_item list
-            line_items = [product.line_item for product in receipt.products]
-            # get decoded name list
-            product_names = decode_processor.processNames(line_items)
-            # write results
-            for product, decoded_name in zip(receipt.products, product_names):
-                product.product_name = decoded_name
+            # # get line_item list
+            # line_items = [product.line_item for product in receipt.products]
+            # # get decoded name list
+            # product_names = decode_processor.processNames(line_items)
+            # # write results
+            # for product, decoded_name in zip(receipt.products, product_names):
+            #     product.product_name = decoded_name
                                           
             logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
             return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -66,10 +66,8 @@ def map_receipt():
 
         if not data:
             return jsonify({'error': 'Invalid input, JSON required'}), 500
-        if required_fields not in data:
-            return jsonify({'error': 'Missing required receipt fields'}), 500
         for field in required_fields:
-            if data.get(field) == "" or data.get(field) is None:
+            if field not in data or data.get(field) == "" or data.get(field) is None:
                 return jsonify({'error': 'Required fields cannot be empty'}), 500
         
         # Extract receipt details from JSON
@@ -84,13 +82,13 @@ def map_receipt():
         
         # Create a Receipt instance
         receipt = Receipt(store_name=store_name, date=date, products=products, store_address=store_address, total_receipt_price=total_receipt_price)
-        # get product_name list
-        product_names = [product.product_name for product in receipt.products]
-        # get mapped name list
-        generic_names = map_processor.processNames(product_names)
-        # write results
-        for product, mapped_name in zip(receipt.products, generic_names):
-            product.generic_name = mapped_name
+        # # get product_name list
+        # product_names = [product.product_name for product in receipt.products]
+        # # get mapped name list
+        # generic_names = map_processor.processNames(product_names)
+        # # write results
+        # for product, mapped_name in zip(receipt.products, generic_names):
+        #     product.generic_name = mapped_name
                                           
         logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
         return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -103,15 +101,16 @@ def map_receipt():
 def post_receipt():
     try:
         data = request.get_json()
-        # Process the received data here
-        # TODO: clean up possible generic matches array and only keep match selected from user
-        logging.debug(f"Data from client: {data}")
+        receipt = extract_receipt(data)
+       
+        # make sure that all store products (and associated generic items) exist in the storeProducts table before posting the full receipt
+        post_store_products(receipt)
         
+        # now add the receipt to the receipt db
         # Access the database and collection
-        collection = mongoClient.get_collection(db="receiptsdb", collection="receipts")
-        
-        # Insert the data into the collection
-        result = collection.insert_one(data)
+        collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
+        result = collection.insert_one(receipt.get_mongo_entry())
+    
         logging.debug(f"Data from mongo: {result}")
         
         return jsonify({"status": "success", "data_received": data}), 200
@@ -217,3 +216,79 @@ def get_storeProducts():
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
+    
+def extract_receipt(response_data):
+    '''convert data from frontend request to receipt object'''
+    required_fields = ['store_name', 'date', 'products', 'store_address', 'total_receipt_price']
+        
+    if not response_data:
+        raise TypeError("Invalid input, function requires JSON data field")
+    for field in required_fields:
+        if field not in response_data or response_data.get(field) == "" or response_data.get(field) is None:
+            raise ValueError("Required fields missing or empty")
+            
+    # Extract receipt details from JSON
+    store_name = response_data.get('store_name')
+    date = response_data.get('date')
+    products = response_data.get('products')
+    store_address = response_data.get('store_address')
+    total_receipt_price = response_data.get('total_receipt_price')
+    
+    # Convert JSON product data into StoreProduct objects
+    # products = [StoreProduct(**product) for product in products]
+    product_objects = []
+    for product in products:
+        product_objects.append(StoreProduct(line_item=product["line_item"], count=product["count"], total_price=product["total_price"], store_name=product["store_name"], store_product_name=product["store_product_name"], generic_matches=product["generic_matches"]))
+    
+    # Create a Receipt instance
+    receipt = Receipt(store_name=store_name, date=date, products=product_objects, store_address=store_address, total_receipt_price=total_receipt_price)
+    return receipt
+
+def post_generic_items(receipt):
+    '''find/create the generic id for the given product'''
+    # if the generic item is in the db, add the id to the product object
+    # if the generic items is not in the db, add the generic item to the db and add the id to the product object
+    collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
+
+    for product in receipt.products:
+
+        doccument = collection.find_one({"genericItem": product.generic_matches[0]})
+
+        if doccument:
+            product.generic_id = doccument["_id"]
+        else:
+            product.generic_id = collection.insert_one({"genericItem": product.generic_matches[0]}).inserted_id
+
+def post_store_products(receipt):
+    '''find/create the product id for the given product'''
+
+    # should call post generic items first, to make sure that each posted product has a generic id
+    post_generic_items(receipt)
+
+    # if the store product is in the db, add the id to the product object, update the recent prices
+    # if the store product is not in the db, add the store product to the db and then add the id to the product object
+    collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+
+    for product in receipt.products:
+
+        product.store_name = receipt.store_name
+        product.date = receipt.date
+
+        if not (product.store_product_name and product.store_name and product.generic_id and product.price_per_count and product.date):
+            ValueError("Valid store product required to create a store product")
+
+        query = {"storeProductName": product.store_product_name, "storeName": receipt.store_name}
+
+        doccument = collection.find_one(query)
+
+        if doccument:
+            product.id = doccument["_id"]
+            # update the recent prices, set the id
+            prices = doccument["recentPrices"]
+            prices.append([product.price_per_count, receipt.date])
+            prices = prices[-5:]
+            update_operation = { '$set' : {'recentPrices' : prices}}
+            collection.update_one(query, update_operation)
+        else:
+            # insert the product, set the id
+            product.id = collection.insert_one(product.first_mongo_entry()).inserted_id
