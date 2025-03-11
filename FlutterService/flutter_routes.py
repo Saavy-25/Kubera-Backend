@@ -88,9 +88,40 @@ def map_receipt():
         product_names = [product.product_name for product in receipt.products]
         # get mapped name list
         generic_names = map_processor.processNames(product_names)
+
+        collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
+
+        for name in generic_names:
+            agg_pipeline = [
+                                {
+                                    "$search": {
+                                        "text": {
+                                            "query": name,
+                                            "path": "genericName",
+                                            "fuzzy": {
+                                                "maxEdits": 1,
+                                                "maxExpansions": 100
+                                            }
+                                        }
+                                    }
+                                },
+                                {"$limit": 3}, # top 3 matches
+                                {
+                                    "$project": {
+                                        "genericName": 1,
+                                        "_id": 0,
+                                        "score": {"$meta": "searchScore"},
+                                    }
+                                },
+                                {"$sort": {"score": -1}}
+                            ]
+            
+        query_results = list(collection.aggregate(agg_pipeline))
+
         # write results
-        for product, mapped_name in zip(receipt.products, generic_names):
-            product.generic_name = mapped_name
+        for i, name in enumerate(generic_names):
+            top_generic_names = [result['genericName'] for result in query_results]
+            receipt.products[i].generic_name = top_generic_names
                                           
         logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
         return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -143,7 +174,7 @@ def search_generic():
                             {
                                 "autocomplete": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "tokenOrder": "any",
                                     "fuzzy": {
                                         "maxEdits": 1,
@@ -154,7 +185,7 @@ def search_generic():
                             {
                                 "text": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "fuzzy": {
                                         "maxEdits": 1,
                                         "maxExpansions": 100
@@ -172,7 +203,7 @@ def search_generic():
             {
                 "$project":
                 {
-                    "genericItem": 1,
+                    "genericName": 1,
                     "_id": 1,
                     "score": {"$meta": "searchScore"},
                 }
