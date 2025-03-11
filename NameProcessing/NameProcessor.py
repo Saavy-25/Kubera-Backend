@@ -95,6 +95,7 @@ class NameProcessor:
     def __get_api_key(self):
         load_dotenv()
         return os.getenv("OPENAI_API_KEY")
+
     def __get_base_prompt(self, prompt_path):
         with open(prompt_path, "r") as file:
             return file.read().strip()
