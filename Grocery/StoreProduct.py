@@ -48,7 +48,7 @@ class StoreProduct:
             "storeProductName": self.store_product_name,
             "storeName": self.store_name,
             "genericId": self.generic_id,
-            "recentPrices": [[self.date, self.price_per_count]]
+            "recentPrices": [[self.price_per_count, self.date]]
         }
     
     def get_map(self) -> dict:
