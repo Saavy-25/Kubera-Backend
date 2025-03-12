@@ -50,7 +50,15 @@ def analyze_receipt(r):
             if receipt.fields:
                 merchant_name = receipt.fields.get("MerchantName").get('valueString')
                 transaction_date = receipt.fields.get("TransactionDate").get('valueDate')
-                address = receipt.fields.get("MerchantAddress").get('valueAddress')
+                address_map = receipt.fields.get("MerchantAddress").get('valueAddress')
+
+                address = ""
+                for index, value in enumerate(address_map.values()):
+                    if index == 0:
+                        address = value
+                    else: 
+                        address = address + ", " + value 
+                
                 total = receipt.fields.get("Total").get('valueCurrency').get('amount')
 
                 items = receipt.fields.get("Items")
