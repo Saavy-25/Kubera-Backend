@@ -252,12 +252,12 @@ def post_generic_items(receipt):
 
     for product in receipt.products:
 
-        doccument = collection.find_one({"genericItem": product.generic_matches[0]})
+        doccument = collection.find_one({"genericName": product.generic_matches[0]})
 
         if doccument:
             product.generic_id = doccument["_id"]
         else:
-            product.generic_id = collection.insert_one({"genericItem": product.generic_matches[0]}).inserted_id
+            product.generic_id = collection.insert_one({"genericName": product.generic_matches[0]}).inserted_id
 
 def post_store_products(receipt):
     '''find/create the product id for the given product'''
@@ -282,8 +282,9 @@ def post_store_products(receipt):
         doccument = collection.find_one(query)
 
         if doccument:
+            # if the store product is in the db, add the id to the product object, update the recent prices
+            # store the id
             product.id = doccument["_id"]
-            # update the recent prices, set the id
             prices = doccument["recentPrices"]
             prices.append([product.price_per_count, receipt.date])
             prices = prices[-5:]
