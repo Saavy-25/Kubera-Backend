@@ -214,23 +214,30 @@ def search_generic():
     except Exception as e:
         return f"An error occurred: {e}", 400
     
-@flutter_bp.route('/get_storeProducts', methods=['POST'])
-def get_storeProducts():
+@flutter_bp.route('/get_storeProducts/<generic_id>', methods=['GET'])
+def get_storeProducts(generic_id):
     try:
         collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
-        
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "Request body is required"}), 401
-        if "productIds" not in data:
-            return jsonify({"error": "productIds field is required"}), 401
-        if data["productIds"] == []:
-            return jsonify({"error": "No productId provided"}), 401
-
-        cur = collection.find({"_id": {'$in': [ObjectId(id) for id in data["productIds"]]}}, {'_id': 0, 'genericItemIds': 0}) # Excluding _id field from documents returned
+        cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
         results = list(cur)
 
         return jsonify(results), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
+
+# Currently not in use - just in case we want to refactor and only ping db for recentprices instead of the entire StoreProduct object
+@flutter_bp.route('/get_recentPrices/<product_id>', methods=['GET'])
+def get_productDetails(product_id):
+    try:
+        if not product_id:
+            return jsonify({"error": "productId parameter is required"}), 400
+        
+        collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+        result = collection.find_one({"_id": ObjectId(product_id)}, {'recentPrices': 1, "_id": 0})
+        if not result:
+            return jsonify({"error": "No product found with the given ID"}), 404
+
+        return jsonify(result), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
     
