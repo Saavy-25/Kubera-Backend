@@ -8,10 +8,11 @@ class StoreProduct:
         except Exception:
             raise TypeError("Valid count and price required to create a store product")
         
-        if int(count) < 0:
-                raise ValueError(str("Count must be greater or equal to 1 to create a store product"))
-        if float(total_price) < 0.0:
-            raise ValueError("Valid price required to create a store product")
+        # if int(count) < 0:
+        #         raise ValueError(str("Count must be greater or equal to 1 to create a store product"))
+        # if float(total_price) <= 0.0:
+        #     print(total_price)
+        #     raise ValueError("Valid price required to create a store product")
 
         self.price_per_count = round( float(self.total_price)/ self.count, 2)
 
