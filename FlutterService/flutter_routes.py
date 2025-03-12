@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 import io
 from Grocery.Receipt import Receipt
 from Grocery.StoreProduct import StoreProduct
-# from NameProcessing.NameProcessor import NameProcessor
+from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
 
 
@@ -15,8 +15,8 @@ from AzureDIConnection.DIConnection import analyze_receipt
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
-# decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
-# map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
+decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
+map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
 
 mongoClient = MongoConnector()
 
@@ -42,13 +42,13 @@ def process_receipt():
             img.save(img_io, 'JPEG')
             receipt = analyze_receipt(img_io)
 
-            # # get line_item list
-            # line_items = [product.line_item for product in receipt.products]
-            # # get decoded name list
-            # product_names = decode_processor.processNames(line_items)
-            # # write results
-            # for product, decoded_name in zip(receipt.products, product_names):
-            #     product.product_name = decoded_name
+            # get line_item list
+            line_items = [product.line_item for product in receipt.products]
+            # get decoded name list
+            product_names = decode_processor.processNames(line_items)
+            # write results
+            for product, decoded_name in zip(receipt.products, product_names):
+                product.product_name = decoded_name
                                           
             logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
             return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -82,13 +82,44 @@ def map_receipt():
         
         # Create a Receipt instance
         receipt = Receipt(store_name=store_name, date=date, products=products, store_address=store_address, total_receipt_price=total_receipt_price)
-        # # get product_name list
-        # product_names = [product.product_name for product in receipt.products]
-        # # get mapped name list
-        # generic_names = map_processor.processNames(product_names)
-        # # write results
-        # for product, mapped_name in zip(receipt.products, generic_names):
-        #     product.generic_name = mapped_name
+        # get product_name list
+        product_names = [product.product_name for product in receipt.products]
+        # get mapped name list
+        generic_names = map_processor.processNames(product_names)
+
+        collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
+
+        for name in generic_names:
+            agg_pipeline = [
+                                {
+                                    "$search": {
+                                        "text": {
+                                            "query": name,
+                                            "path": "genericName",
+                                            "fuzzy": {
+                                                "maxEdits": 1,
+                                                "maxExpansions": 100
+                                            }
+                                        }
+                                    }
+                                },
+                                {"$limit": 3}, # top 3 matches
+                                {
+                                    "$project": {
+                                        "genericName": 1,
+                                        "_id": 0,
+                                        "score": {"$meta": "searchScore"},
+                                    }
+                                },
+                                {"$sort": {"score": -1}}
+                            ]
+            
+        query_results = list(collection.aggregate(agg_pipeline))
+
+        # write results
+        for i, name in enumerate(generic_names):
+            top_generic_names = [result['genericName'] for result in query_results]
+            receipt.products[i].generic_name = top_generic_names
                                           
         logging.debug(f"Processed receipt: {Receipt.get_map(receipt)}")
         return jsonify({'message': 'File successfully uploaded', 'receipt': Receipt.get_map(receipt)}), 200
@@ -142,7 +173,7 @@ def search_generic():
                             {
                                 "autocomplete": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "tokenOrder": "any",
                                     "fuzzy": {
                                         "maxEdits": 1,
@@ -153,7 +184,7 @@ def search_generic():
                             {
                                 "text": {
                                     "query": query,
-                                    "path": "genericItem",
+                                    "path": "genericName",
                                     "fuzzy": {
                                         "maxEdits": 1,
                                         "maxExpansions": 100
@@ -171,7 +202,7 @@ def search_generic():
             {
                 "$project":
                 {
-                    "genericItem": 1,
+                    "genericName": 1,
                     "_id": 1,
                     "score": {"$meta": "searchScore"},
                 }
