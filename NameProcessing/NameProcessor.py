@@ -17,6 +17,7 @@ class NameProcessor:
         self.__load_cache() # load cache on startup only once
     
     def processNames(self, product_name_list): 
+        print(product_name_list)
         index_list, cached_list, product_name_list = self.__check_cached_names(product_name_list)
         
         name_list = []
@@ -60,6 +61,7 @@ class NameProcessor:
         new_product_name_list = []
         index_list = []
         cached_list = []
+
         for index, name in enumerate(product_name_list):
             # item is in cache
             if name in self.cache:
@@ -69,14 +71,17 @@ class NameProcessor:
             # not in cache
             else:
                 # fuzzy search
-                best_match, score, _ = process.extractOne(name, self.cache.keys(), scorer=fuzz.ratio)
+                if self.cache.keys():
+                    best_match, score, _ = process.extractOne(name, self.cache.keys(), scorer=fuzz.ratio)
                               
-                if best_match and score >= threshold: # close match found  
-                    index_list.append(index)
-                    cached_list.append(self.cache[best_match])
-                else: # no close match found  
-                    new_product_name_list.append(name)  
-        
+                    if best_match and score >= threshold: # close match found  
+                        index_list.append(index)
+                        cached_list.append(self.cache[best_match])
+                    else: # no close match found  
+                        new_product_name_list.append(name)
+                else: # case when cache empty
+                        new_product_name_list.append(name)  
+
         return index_list, cached_list, new_product_name_list 
         
     def __get_response_json(self, prompt):
