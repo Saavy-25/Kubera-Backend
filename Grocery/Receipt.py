@@ -24,11 +24,11 @@ class Receipt:
          '''convert model to map for use in jsonify() when getting receipt scan confirmation'''
 
          return{
-            "store_name": self.store_name,
-            "store_address": dict(self.store_address),
+            "storeName": self.store_name,
+            "storeAddress": dict(self.store_address),
             "date": self.date,
-            "total_receipt_price": self.total_receipt_price,
-            "products": [product.__dict__ for product in self.products]
+            "totalReceiptPrice": self.total_receipt_price,
+            "products": [product.get_map() for product in self.products]
         }
     
     def get_mongo_entry(self):

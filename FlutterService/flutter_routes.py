@@ -102,7 +102,7 @@ def map_receipt():
         for i, name in enumerate(generic_names):
             top_generic_names = [result['genericName'] for result in query_results]
             if not top_generic_names or top_generic_names == []:
-                receipt.products[i].generic_matches = generic_names[i]
+                receipt.products[i].generic_matches = [generic_names[i]]
             else:
                 # in the case that there was no fuzzy match, just set to what was returned by name processor
                 receipt.products[i].generic_matches = top_generic_names
@@ -130,7 +130,7 @@ def post_receipt():
     
         logging.debug(f"Data from mongo: {result}")
         
-        return jsonify({"status": "success", "data_received": data}), 200
+        return jsonify({"status": "success"}), 200
     except Exception as e:
         logging.error(f"Error posting receipt to MongoDB: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -236,7 +236,7 @@ def get_storeProducts():
     
 def extract_receipt(response_data):
     '''convert data from frontend request to receipt object'''
-    required_fields = ['store_name', 'date', 'products', 'store_address', 'total_receipt_price']
+    required_fields = ['storeName', 'date', 'products', 'storeAddress', 'totalReceiptPrice']
         
     if not response_data:
         raise TypeError("Invalid input, function requires JSON data field")
@@ -245,17 +245,17 @@ def extract_receipt(response_data):
             raise ValueError("Required fields missing or empty")
             
     # Extract receipt details from JSON
-    store_name = response_data.get('store_name')
+    store_name = response_data.get('storeName')
     date = response_data.get('date')
     products = response_data.get('products')
-    store_address = response_data.get('store_address')
-    total_receipt_price = response_data.get('total_receipt_price')
+    store_address = response_data.get('storeAddress')
+    total_receipt_price = response_data.get('totalReceiptPrice')
     
     # Convert JSON product data into StoreProduct objects
     # products = [StoreProduct(**product) for product in products]
     product_objects = []
     for product in products:
-        product_objects.append(StoreProduct(line_item=product["line_item"], count=product["count"], total_price=product["total_price"], store_name=product["store_name"], store_product_name=product["store_product_name"], generic_matches=product["generic_matches"]))
+        product_objects.append(StoreProduct(line_item=product["lineItem"], count=product["count"], total_price=product["totalPrice"], store_name=product["storeName"], store_product_name=product["storeProductName"], generic_matches=product["genericMatches"]))
     
     # Create a Receipt instance
     receipt = Receipt(store_name=store_name, date=date, products=product_objects, store_address=store_address, total_receipt_price=total_receipt_price)
