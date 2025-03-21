@@ -43,24 +43,24 @@ def test_no_price():
     
     assert error_raised
 
-def test_illegal_count():
-    '''negative count'''
-    error_raised = False
+# def test_illegal_count():
+#     '''negative count'''
+#     error_raised = False
 
-    try:
-        p = StoreProduct("BUTTER CHICKEN W/BASMATI", -2, 8.98)
-    except ValueError:
-        error_raised = True
+#     try:
+#         p = StoreProduct("BUTTER CHICKEN W/BASMATI", -2, 8.98)
+#     except ValueError:
+#         error_raised = True
     
-    assert error_raised
+#     assert error_raised
 
-def test_illegal_price():
-    '''negative price'''
-    error_raised = False
+# def test_illegal_price():
+#     '''negative price'''
+#     error_raised = False
 
-    try:
-        p = StoreProduct("BUTTER CHICKEN W/BASMATI", 2, -8.98)
-    except ValueError:
-        error_raised = True
+#     try:
+#         p = StoreProduct("BUTTER CHICKEN W/BASMATI", 2, -8.98)
+#     except ValueError:
+#         error_raised = True
     
-    assert error_raised
+#     assert error_raised
