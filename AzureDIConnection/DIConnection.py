@@ -10,10 +10,7 @@ from Grocery.StoreProduct import StoreProduct
 from Grocery.Receipt import Receipt
 
 ENDPOINT = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
-PUBLIXRECEIPT = "PublixReceipt.jpg"
-TRADERJOESRECEIPT = "TraderJoesReceipt.jpg"
-WALMARTRECEIPT = "WalmartReceipt.jpg"
-SAMSRECEIPT = "SamsReceipt.jpg"
+ADDRESS_COMPONENTS = ["streetAddress", "city", "state", "postalCode"]
 
 # sample document, convert to bytes
 def convert_bytes(file):
@@ -51,13 +48,15 @@ def analyze_receipt(r):
                 merchant_name = receipt.fields.get("MerchantName").get('valueString')
                 transaction_date = receipt.fields.get("TransactionDate").get('valueDate')
                 address_map = receipt.fields.get("MerchantAddress").get('valueAddress')
+                print(address_map)
 
-                address = ""
-                for index, value in enumerate(address_map.values()):
-                    if index == 0:
-                        address = value
-                    else: 
-                        address = address + ", " + value 
+                address = []
+                if address_map:
+                    for component in ADDRESS_COMPONENTS:
+                        if address_map.get(component):
+                            address.append(address_map.get(component))
+                
+                address = ', '.join(address)
                 
                 total = receipt.fields.get("Total").get('valueCurrency').get('amount')
 

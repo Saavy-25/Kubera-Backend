@@ -6,13 +6,13 @@ from dotenv import load_dotenv
 from rapidfuzz import process, fuzz
 
 class NameProcessor:
-    def __init__(self, prompt_path, batch_size = 5, debug_print = True): 
+    def __init__(self, prompt_key, cache_path, batch_size = 5, debug_print = True): 
         self.DEBUG_PRINT = debug_print # prints batches and prompts 
         self.BATCH_SIZE = batch_size   # large batch size: faster with worse results, small batch size: slower with better results and more api calls $ 
         self.API_KEY = self.__get_api_key() 
         self.client = OpenAI(api_key=self.API_KEY)
-        self.BASE_PROMPT = self.__get_base_prompt(prompt_path)
-        self.CACHE_PATH = prompt_path + "_cache.json"
+        self.BASE_PROMPT = self.__get_base_prompt(prompt_key)
+        self.CACHE_PATH = cache_path
         self.cache = {}
         self.__load_cache() # load cache on startup only once
     
@@ -28,6 +28,7 @@ class NameProcessor:
                 print(f"\nCurrent batch{batch_list}")
             
             # build prompt
+            print(self.BASE_PROMPT)
             complete_prompt: str = self.BASE_PROMPT
             for name in batch_list:
                 complete_prompt += "\n"+ name
@@ -101,9 +102,10 @@ class NameProcessor:
         load_dotenv()
         return os.getenv("OPENAI_API_KEY")
 
-    def __get_base_prompt(self, prompt_path):
-        with open(prompt_path, "r") as file:
-            return file.read().strip()
+    def __get_base_prompt(self, prompt_key):
+        load_dotenv()
+        return os.getenv(prompt_key)
+    
     def __load_cache(self):
         try:
             with open(self.CACHE_PATH, 'r') as file:
@@ -116,19 +118,19 @@ class NameProcessor:
 
 def main():
     # sample usage decode receipt product names
-    my_decoder = NameProcessor(prompt_path="NameProcessing/.decode_prompt")
+    my_decoder = NameProcessor(prompt_key="DECODE_PROMPT", cache_path="NameProcessing/decode_cache.json")
     product_list = ["S/MTN.BNLS BREAST", "FZN ORGANIC GREEN BEANS", "Milk Half Gal Almond Unsweeten", "PUB DICED TOMATOES", "PEPPERS GREEN BELL", "BELL PEPPERS RED"]
     decoded_list = my_decoder.processNames(product_name_list=product_list)
     print(f"Final decoded list: {decoded_list}")
 
     # sample usage fuzzy cache
-    my_decoder = NameProcessor(prompt_path="NameProcessing/.decode_prompt")
+    my_decoder = NameProcessor(prompt_key="DECODE_PROMPT", cache_path="NameProcessing/decode_cache.json")
     product_list = ["S/MTN.BNLS BREEST", "FZN DRGANIC GREEN BEDNS", "Milk Half Gall Almond Unsweeten", "PU DICED TOMATOES", "PEPPERS GREEN BELLL", "BLL PEPPERS RD"]
     decoded_list = my_decoder.processNames(product_name_list=product_list)
     print(f"Final decoded list: {decoded_list}")
 
      # sample usage map decoded names to generic items
-    my_mapper = NameProcessor(prompt_path="NameProcessing/.map_prompt")
+    my_mapper = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessing/map_cache.json")
     product_list = ["Boneless Chicken Breast", "Organic Green Beans", "Unsweetened Almond Milk", "Diced Tomatoes", "Green Bell Peppers", "Red Bell Peppers"]
     item_list = my_mapper.processNames(product_name_list=product_list)
     print(f"Final item list: {item_list}")

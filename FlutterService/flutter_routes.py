@@ -15,8 +15,8 @@ from AzureDIConnection.DIConnection import analyze_receipt
 
 flutter_bp = Blueprint('flutter_bp', __name__)
 
-decode_processor = NameProcessor(prompt_path="./NameProcessing/.decode_prompt")
-map_processor = NameProcessor(prompt_path="./NameProcessing/.map_prompt")
+decode_processor = NameProcessor(prompt_key="DECODE_PROMPT", cache_path="NameProcessing/.decode_cache.json")
+map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessing/.map_cache.json")
 
 mongoClient = MongoConnector()
 
