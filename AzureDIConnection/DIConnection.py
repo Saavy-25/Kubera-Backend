@@ -47,8 +47,8 @@ def analyze_receipt(r):
             if receipt.fields:
                 merchant_name = receipt.fields.get("MerchantName").get('valueString')
                 transaction_date = receipt.fields.get("TransactionDate").get('valueDate')
+                print(type(transaction_date))
                 address_map = receipt.fields.get("MerchantAddress").get('valueAddress')
-                print(address_map)
 
                 address = []
                 if address_map:

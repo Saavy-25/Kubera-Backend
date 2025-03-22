@@ -59,11 +59,11 @@ class StoreProduct:
             "count": self.count,
             "totalPrice": self.total_price,
             "pricePerCount": self.price_per_count,
-            "storeName": self.store_name,
+            # "storeName": self.store_name,
             "recentPrices": self.recent_prices,
             "storeProductName": self.store_product_name,
             "genericMatches": self.generic_matches,
-            "date": self.date,
-            "id": self.id,
-            "genericId": self.generic_id
+            # "date": self.date,
+            # "id": self.id,
+            # "genericId": self.generic_id
         }

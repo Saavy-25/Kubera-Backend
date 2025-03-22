@@ -264,7 +264,7 @@ def extract_receipt(response_data):
     # products = [StoreProduct(**product) for product in products]
     product_objects = []
     for product in products:
-        product_objects.append(StoreProduct(line_item=product["lineItem"], count=product["count"], total_price=product["totalPrice"], store_name=product["storeName"], store_product_name=product["storeProductName"], generic_matches=product["genericMatches"]))
+        product_objects.append(StoreProduct(line_item=product["lineItem"], count=product["count"], total_price=product["totalPrice"], store_product_name=product["storeProductName"], generic_matches=product["genericMatches"]))
     
     # Create a Receipt instance
     receipt = Receipt(store_name=store_name, date=date, products=product_objects, store_address=store_address, total_receipt_price=total_receipt_price)
