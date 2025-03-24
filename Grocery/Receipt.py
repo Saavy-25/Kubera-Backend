@@ -38,6 +38,6 @@ class Receipt:
             "storeName": self.store_name,
             "storeAddress": self.store_address,
             "date": self.date, 
-            "totalReceiptPrice": self.date, 
+            "totalReceiptPrice": self.total_receipt_price, 
             "lineItems": [product.mongo_receipt_entry() for product in self.products]
         }
