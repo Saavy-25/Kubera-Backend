@@ -18,7 +18,7 @@ def test_process_receipt():
     receipt = analyze_receipt("test/test_receipt.jpg")
     
     assert receipt.store_name == "TRADER JOE'S"
-    assert receipt.store_address == {'houseNumber': '3724', 'road': 'SW Archer Road', 'postalCode': '32608', 'city': 'Gainesville', 'state': 'FL', 'streetAddress': '3724 SW Archer Road'}
+    assert receipt.store_address == '3724 SW Archer Road, Gainesville, FL, 32608'
     assert receipt.date == "2025-02-25"
     assert receipt.total_receipt_price == 57.12
     assert len(receipt.products) == 14
@@ -42,14 +42,14 @@ def test_process_receipt_route(client):
 
     assert response.status_code == 200
     receipt_map = response.json['receipt']
-    assert receipt_map['store_name'] == "TRADER JOE'S"
-    assert receipt_map['store_address'] == {'houseNumber': '3724', 'road': 'SW Archer Road', 'postalCode': '32608', 'city': 'Gainesville', 'state': 'FL', 'streetAddress': '3724 SW Archer Road'}
+    assert receipt_map['storeName'] == "TRADER JOE'S"
+    assert receipt_map['storeAddress'] == '3724 SW Archer Road, Gainesville, FL, 32608'
     assert receipt_map['date'] == "2025-02-25"
-    assert receipt_map['total_receipt_price'] == 57.12
+    assert receipt_map['totalReceiptPrice'] == 57.12
 
     rice = receipt_map['products'][0]
     
-    assert rice['line_item'] == "BUTTER CHICKEN W/BASMATI"
+    assert rice['lineItem'] == "BUTTER CHICKEN W/BASMATI"
     assert rice['count'] == 2
-    assert rice['total_price'] == 8.98
+    assert rice['totalPrice'] == 8.98
 
