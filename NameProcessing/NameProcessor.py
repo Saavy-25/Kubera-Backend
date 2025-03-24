@@ -100,7 +100,10 @@ class NameProcessor:
     
     def __get_api_key(self):
         load_dotenv(override=True)
-        return os.getenv("OPENAI_API_KEY")
+        key = os.getenv("OPENAI_API_KEY")
+        if not key:
+            raise ValueError("OPENAI_API_KEY environment variable is not set")
+        return key
 
     def __get_base_prompt(self, prompt_key):
         load_dotenv(override=True)
