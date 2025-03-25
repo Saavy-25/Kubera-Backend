@@ -103,7 +103,7 @@ class NameProcessor:
         return os.getenv("OPENAI_API_KEY")
 
     def __get_base_prompt(self, prompt_key):
-        load_dotenv(override=True)
+        load_dotenv()
         return os.getenv(prompt_key)
     
     def __load_cache(self):
