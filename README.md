@@ -16,7 +16,7 @@ View Swagger Doccumentation for API during local dev by running app.py and visit
 
 ## Models and JSON standards
 
-![model and json standards for development](Grocery/ModelJsonOrganization.png)
+![model and json standards for development](Grocery/ModelUML.png)
 
 ## Deployment
 
