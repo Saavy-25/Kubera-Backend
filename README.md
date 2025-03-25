@@ -14,6 +14,10 @@ If importing any new packages when developing, please make sure to update the re
 
 View Swagger Doccumentation for API during local dev by running app.py and visiting http://127.0.0.1:5000/apidocs/
 
+## Models and JSON standards
+
+![model and json standards for development](Grocery/ModelJsonOrganization.png)
+
 ## Deployment
 
 Currently deployed code is on prod branch. 
