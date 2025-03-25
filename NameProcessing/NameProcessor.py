@@ -99,11 +99,8 @@ class NameProcessor:
         return completion.choices[0].message.content
     
     def __get_api_key(self):
-        load_dotenv(override=True)
-        key = os.getenv("OPENAI_API_KEY")
-        if not key:
-            raise ValueError("OPENAI_API_KEY environment variable is not set")
-        return key
+        load_dotenv()
+        return os.getenv("OPENAI_API_KEY")
 
     def __get_base_prompt(self, prompt_key):
         load_dotenv(override=True)
