@@ -4,18 +4,17 @@ import os
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from Grocery.StoreProduct import StoreProduct
+from Grocery.ScannedLineItem import ScannedLineItem
 
 def test_process_receipt():
     '''test minimum constructor argumenbts'''
-    p = StoreProduct("BUTTER CHICKEN W/BASMATI", 2, 8.98)
+    p = ScannedLineItem("BUTTER CHICKEN W/BASMATI", 2, 8.98)
     
     assert p.line_item == "BUTTER CHICKEN W/BASMATI"
     assert p.count == 2
     assert p.total_price == 8.98
     assert p.price_per_count == 4.49
     assert p.store_name == None
-    assert p.recent_prices == None
     assert p.id == None
     assert p.store_product_name == None
     assert p.generic_matches == None
@@ -26,7 +25,7 @@ def test_no_count():
     error_raised = False
 
     try:
-        p = StoreProduct("BUTTER CHICKEN W/BASMATI", None, 8.98)
+        p = ScannedLineItem("BUTTER CHICKEN W/BASMATI", None, 8.98)
     except TypeError:
         error_raised = True
     
@@ -37,7 +36,7 @@ def test_no_price():
     error_raised = False
 
     try:
-        p = StoreProduct("BUTTER CHICKEN W/BASMATI", 2, None)
+        p = ScannedLineItem("BUTTER CHICKEN W/BASMATI", 2, None)
     except TypeError:
         error_raised = True
     

@@ -6,8 +6,8 @@ from azure.ai.documentintelligence.models import AnalyzeResult
 from azure.ai.documentintelligence.models import AnalyzeDocumentRequest
 from dotenv import load_dotenv
 # Import the models
-from Grocery.StoreProduct import StoreProduct
-from Grocery.Receipt import Receipt
+from Grocery.ScannedLineItem import ScannedLineItem
+from Grocery.ScannedReceipt import ScannedReceipt
 
 ENDPOINT = "https://kubera-doc-inteli.cognitiveservices.azure.com/"
 ADDRESS_COMPONENTS = ["streetAddress", "city", "state", "postalCode"]
@@ -61,7 +61,7 @@ def analyze_receipt(r):
                 total = receipt.fields.get("Total").get('valueCurrency').get('amount')
 
                 items = receipt.fields.get("Items")
-                products = []
+                scanned_line_items = []
 
                 if items:
                     for item in items.get("valueArray"):
@@ -90,6 +90,6 @@ def analyze_receipt(r):
                         else:
                             item_total_price = 0.0
 
-                        products.append(StoreProduct(line_item=item_description, count=count, total_price=item_total_price))
+                        scanned_line_items.append(ScannedLineItem(line_item=item_description, count=count, total_price=item_total_price))
 
-                return Receipt(store_name=merchant_name, date=transaction_date, store_address=address, total_receipt_price=total, products=products)
+                return ScannedReceipt(store_name=merchant_name, date=transaction_date, store_address=address, total_receipt_price=total, scanned_line_items=scanned_line_items)
