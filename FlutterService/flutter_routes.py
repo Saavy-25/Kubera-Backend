@@ -4,8 +4,8 @@ from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
-from Grocery.Receipt import Receipt
-from Grocery.StoreProduct import StoreProduct
+from Grocery.ScannedReceipt import ScannedReceipt
+from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
 
@@ -40,19 +40,19 @@ def process_receipt():
             img_io = io.BytesIO()
             logging.debug(f"io: {img_io}")
             img.save(img_io, 'JPEG')
-            receipt = analyze_receipt(img_io)
+            scanned_receipt = analyze_receipt(img_io)
 
             # get line_item list
-            line_items = [product.line_item for product in receipt.products]
+            line_item_abrev = [scanned_line_item.line_item for scanned_line_item in scanned_receipt.scanned_line_items]
 
             # get decoded name list
-            product_names = decode_processor.processNames(line_items)
+            product_names = decode_processor.processNames(line_item_abrev)
             # write results
-            for product, decoded_name in zip(receipt.products, product_names):
+            for product, decoded_name in zip(scanned_receipt.scanned_line_items, product_names):
                 product.store_product_name = decoded_name
                                           
-            logging.debug(f"Processed receipt: {receipt.get_map()}")
-            return jsonify({'message': 'File successfully uploaded', 'receipt': receipt.get_map()}), 200
+            logging.debug(f"Processed receipt: {scanned_receipt.flutter_response()}")
+            return jsonify({'message': 'File successfully uploaded', 'receipt': scanned_receipt.flutter_response()}), 200
     except Exception as e:
         logging.error(f"Error processing receipt: {e}")
         return jsonify({'error': 'An error occurred while processing the receipt'}), 500
@@ -63,9 +63,9 @@ def map_receipt():
     # TODO align with frontend request
     try:
         data = request.get_json()
-        receipt = extract_receipt(data)
+        scanned_receipt = extract_receipt(data)
         # get product_name list
-        product_names = [product.store_product_name for product in receipt.products]
+        product_names = [scanned_line_item.store_product_name for scanned_line_item in scanned_receipt.scanned_line_items]
         # get mapped name list
         generic_names = map_processor.processNames(product_names)
 
@@ -107,10 +107,10 @@ def map_receipt():
             if not top_generic_names or top_generic_names == []:
                 top_generic_names = [name]
 
-            receipt.products[i].generic_matches = top_generic_names
+            scanned_receipt.scanned_line_items[i].generic_matches = top_generic_names
                                           
-        logging.debug(f"Processed receipt: {receipt.get_map()}")
-        return jsonify({'message': 'File successfully uploaded', 'receipt': receipt.get_map()}), 200
+        logging.debug(f"Processed receipt: {scanned_receipt.flutter_response()}")
+        return jsonify({'message': 'File successfully uploaded', 'receipt': scanned_receipt.flutter_response()}), 200
        
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
@@ -120,15 +120,15 @@ def map_receipt():
 def post_receipt():
     try:
         data = request.get_json()
-        receipt = extract_receipt(data)
+        scanned_receipt = extract_receipt(data)
        
         # make sure that all store products (and associated generic items) exist in the storeProducts table before posting the full receipt
-        post_store_products(receipt)
+        post_store_products(scanned_receipt)
         
         # now add the receipt to the receipt db
         # Access the database and collection
         collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
-        result = collection.insert_one(receipt.get_mongo_entry())
+        result = collection.insert_one(scanned_receipt.get_mongo_entry())
     
         logging.debug(f"Data from mongo: {result}")
         
@@ -245,7 +245,7 @@ def get_productDetails(product_id):
     
 def extract_receipt(response_data):
     '''convert data from frontend request to receipt object'''
-    required_fields = ['storeName', 'date', 'products', 'storeAddress', 'totalReceiptPrice']
+    required_fields = ['storeName', 'date', 'scannedLineItems', 'storeAddress', 'totalReceiptPrice']
         
     if not response_data:
         raise TypeError("Invalid input, function requires JSON data field")
@@ -256,66 +256,67 @@ def extract_receipt(response_data):
     # Extract receipt details from JSON
     store_name = response_data.get('storeName')
     date = response_data.get('date')
-    products = response_data.get('products')
+    scanned_line_items = response_data.get('scannedLineItems')
     store_address = response_data.get('storeAddress')
     total_receipt_price = response_data.get('totalReceiptPrice')
     
     # Convert JSON product data into StoreProduct objects
     # products = [StoreProduct(**product) for product in products]
-    product_objects = []
-    for product in products:
-        product_objects.append(StoreProduct(line_item=product["lineItem"], count=product["count"], total_price=product["totalPrice"], store_product_name=product["storeProductName"], generic_matches=product["genericMatches"]))
+    line_item_objects = []
+    for scanned_line_item in scanned_line_items:
+        line_item_objects.append(ScannedLineItem(line_item=scanned_line_item["lineItem"], count=scanned_line_item["count"], total_price=scanned_line_item["totalPrice"], store_product_name=scanned_line_item["storeProductName"], generic_matches=scanned_line_item["genericMatches"]))
     
     # Create a Receipt instance
-    receipt = Receipt(store_name=store_name, date=date, products=product_objects, store_address=store_address, total_receipt_price=total_receipt_price)
-    return receipt
+    scanned_receipt = ScannedReceipt(store_name=store_name, date=date, scanned_line_items=line_item_objects, store_address=store_address, total_receipt_price=total_receipt_price)
+    return scanned_receipt
 
-def post_generic_items(receipt):
+def post_generic_items(scanned_receipt):
     '''find/create the generic id for the given product'''
     # if the generic item is in the db, add the id to the product object
     # if the generic items is not in the db, add the generic item to the db and add the id to the product object
     collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
 
-    for product in receipt.products:
+    for scanned_line_item in scanned_receipt.scanned_line_items:
 
-        doccument = collection.find_one({"genericName": product.generic_matches[0]})
+        doccument = collection.find_one({"genericName": scanned_line_item.generic_matches[0]})
 
         if doccument:
-            product.generic_id = doccument["_id"]
+            scanned_line_item.generic_id = doccument["_id"]
         else:
-            product.generic_id = collection.insert_one({"genericName": product.generic_matches[0]}).inserted_id
+            scanned_line_item.generic_id = collection.insert_one({"genericName": scanned_line_item.generic_matches[0]}).inserted_id
 
-def post_store_products(receipt):
+def post_store_products(scanned_receipt):
     '''find/create the product id for the given product'''
 
     # should call post generic items first, to make sure that each posted product has a generic id
-    post_generic_items(receipt)
+    post_generic_items(scanned_receipt)
 
     # if the store product is in the db, add the id to the product object, update the recent prices
     # if the store product is not in the db, add the store product to the db and then add the id to the product object
     collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
 
-    for product in receipt.products:
+    for scanned_line_item in scanned_receipt.scanned_line_items:
 
-        product.store_name = receipt.store_name
-        product.date = receipt.date
+        scanned_line_item.store_name = scanned_receipt.store_name
+        scanned_line_item.date = scanned_receipt.date
 
-        if not (product.store_product_name and product.store_name and product.generic_id and product.price_per_count and product.date):
+        if not (scanned_line_item.store_product_name and scanned_line_item.store_name and scanned_line_item.generic_id and scanned_line_item.price_per_count and scanned_line_item.date):
             ValueError("Valid store product required to create a store product")
 
-        query = {"storeProductName": product.store_product_name, "storeName": receipt.store_name}
+        query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
 
         doccument = collection.find_one(query)
 
         if doccument:
             # if the store product is in the db, add the id to the product object, update the recent prices
             # store the id
-            product.id = doccument["_id"]
+            scanned_line_item.id = doccument["_id"]
+            # TODO: UPDATE PRICING LOGIC
             prices = doccument["recentPrices"]
-            prices.append([product.price_per_count, receipt.date])
+            prices.append([scanned_line_item.price_per_count, scanned_receipt.date])
             prices = prices[-5:]
             update_operation = { '$set' : {'recentPrices' : prices}}
             collection.update_one(query, update_operation)
         else:
             # insert the product, set the id
-            product.id = collection.insert_one(product.first_mongo_entry()).inserted_id
+            scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
