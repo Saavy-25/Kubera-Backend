@@ -3,12 +3,11 @@ from PIL import Image
 from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
-import io
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
-import datetime
+from datetime import datetime
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -20,9 +19,9 @@ map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessin
 
 mongoClient = MongoConnector()
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
-datetime_format = 'yyyy-mm-dd'
+datetime_format = '%Y-%m-%d' # yyyy-mm-dd format
 
 # flutter app will call this endpoint to send image data
 @flutter_bp.route('/process_receipt', methods=['POST'])
@@ -290,64 +289,81 @@ def post_store_products(scanned_receipt):
     '''find/create the product id for the given product'''
 
     # should call post generic items first, to make sure that each posted product has a generic id
-    post_generic_items(scanned_receipt)
+    try:
+        post_generic_items(scanned_receipt)
 
-    # if the store product is in the db, add the id to the product object, update the recent prices
-    # if the store product is not in the db, add the store product to the db and then add the id to the product object
-    collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+        # if the store product is in the db, add the id to the product object, update the recent prices
+        # if the store product is not in the db, add the store product to the db and then add the id to the product object
+        collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
 
-    for scanned_line_item in scanned_receipt.scanned_line_items:
+        for scanned_line_item in scanned_receipt.scanned_line_items:
 
-        scanned_line_item.store_name = scanned_receipt.store_name
-        scanned_line_item.date = scanned_receipt.date
+            scanned_line_item.store_name = scanned_receipt.store_name
+            scanned_line_item.date = scanned_receipt.date
 
-        if not (scanned_line_item.store_product_name and scanned_line_item.store_name and scanned_line_item.generic_id and scanned_line_item.price_per_count and scanned_line_item.date):
-            ValueError("Valid store product required to create a store product")
+            if not (scanned_line_item.store_product_name and scanned_line_item.store_name and scanned_line_item.generic_id and scanned_line_item.price_per_count and scanned_line_item.date):
+                ValueError("Valid store product required to create a store product")
 
-        query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
+            query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
 
-        document = collection.find_one(query)
+            document = collection.find_one(query)
 
-        if document:
-            # if the store product is in the db, add the id to the product object, update the recent prices
-            # store the id
-            scanned_line_item.id = document["_id"]
-            # TODO: UPDATE PRICING LOGIC
-            curr_price = scanned_line_item.price_per_count
-            curr_date = scanned_line_item.date
-            recent_prices = document["recentPrices"] # list of dicts
-            
-            new_report = {
+            if document:
+                # if the store product is in the db, add the id to the product object, update the recent prices
+                # store the id
+                scanned_line_item.id = document["_id"]
+
+                curr_price = scanned_line_item.price_per_count
+                curr_date = scanned_line_item.date
+                recent_prices = update_recent_prices(curr_price, curr_date, document['recentPrices'])
+
+                update_operation = { '$set' : {'recentPrices' : recent_prices}}
+                collection.update_one(query, update_operation)
+            else:
+                # insert the product, set the id
+                scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+    except Exception as e:
+        logging.debug('An error has occurred: ', e)
+    except ValueError as ve:
+        logging.debug(ve)
+
+def update_recent_prices(curr_price, curr_date, recent_prices):
+    new_report = {
                 'price': curr_price,
                 'reportCount': 1,
                 'lastReportDate': curr_date
             }
             
-            _recent = []
-            curr_date = datetime.strptime(scanned_line_item.date, datetime_format)
-            idx = 0
-            while idx < len(recent_prices):
-                report = recent_prices[idx]
-                last_date = datetime.strptime(report['lastReportDate'], datetime_format)
-                
-                # What if there are multiple prices reported on the same day?
-                if curr_date >= last_date:
-                    if curr_price != report['price']:
-                        _recent.append(new_report)
-                        break
-                    report['lastReportDate'] = curr_date
-                    report['reportCount'] += 1
-                    _recent.append(report)
-                    idx += 1
-                    break
+    _recent, idx = insert_report(recent_prices, new_report)
+    if idx < len(recent_prices):
+        for p in recent_prices[idx:]:
+            _recent.append(p)
+    
+    return _recent[:10]
 
-                _recent.append(report)
-                idx += 1        
-            
-            _recent.append(recent_prices[idx:])
-            recent_prices = _recent[-10:] # keep only the last 10 prices
-            update_operation = { '$set' : {'recentPrices' : recent_prices}}
-            collection.update_one(query, update_operation)
-        else:
-            # insert the product, set the id
-            scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+def insert_report(recent_prices, new_report):
+    _recent = []
+    curr_date = datetime.strptime(new_report['lastReportDate'], datetime_format)
+    curr_price = new_report['price']
+
+    idx = 0
+    while idx < len(recent_prices):
+        report = recent_prices[idx]
+        last_date = datetime.strptime(report['lastReportDate'], datetime_format)
+        
+        # What if there are multiple prices reported on the same day?
+        if curr_date >= last_date:
+            if curr_price != report['price']:
+                _recent.append(new_report)
+                return _recent, idx
+            report['lastReportDate'] = new_report['lastReportDate']
+            report['reportCount'] += 1
+            _recent.append(report)
+            idx += 1
+            return _recent, idx
+
+        _recent.append(report)
+        idx += 1      
+    
+    _recent.append(new_report)
+    return _recent, idx

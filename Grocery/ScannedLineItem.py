@@ -12,7 +12,7 @@ class ScannedLineItem:
         self.generic_matches = generic_matches
         self.id = None #_id in mongo
         self.line_item = line_item
-        self.price_per_count = round( float(self.total_price)/ self.count, 2)
+        self.price_per_count = str(round(float(self.total_price)/ self.count, 2))
         self.store_name = store_name
         self.store_product_name = store_product_name # expanded name
 
