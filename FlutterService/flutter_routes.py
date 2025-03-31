@@ -20,7 +20,7 @@ map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessin
 
 mongoClient = MongoConnector()
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 
 datetime_format = '%Y-%m-%d' # yyyy-mm-dd format
 
