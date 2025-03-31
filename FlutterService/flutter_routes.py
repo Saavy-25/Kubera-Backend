@@ -355,6 +355,7 @@ def insert_report(recent_prices, new_report):
             if curr_price != report['price']:
                 _recent.append(new_report)
                 return _recent, idx
+            
             report['lastReportDate'] = new_report['lastReportDate']
             report['reportCount'] += 1
             _recent.append(report)
