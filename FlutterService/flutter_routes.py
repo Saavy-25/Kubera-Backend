@@ -351,7 +351,6 @@ def insert_report(recent_prices, new_report):
         report = recent_prices[idx]
         last_date = datetime.strptime(report['lastReportDate'], datetime_format)
         
-        # What if there are multiple prices reported on the same day?
         if curr_date >= last_date:
             if curr_price != report['price']:
                 _recent.append(new_report)
