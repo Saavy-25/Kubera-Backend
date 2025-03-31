@@ -3,6 +3,7 @@ from PIL import Image
 from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
+import io
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
