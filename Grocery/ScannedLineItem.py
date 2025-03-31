@@ -33,9 +33,8 @@ class ScannedLineItem:
             "recentPrices": [
                 {
                     "price": self.price_per_count,
-                    "reports": 1,
-                    "latestDate": self.date,
-                    "oldestDate": self.date
+                    "reportCount": 1,
+                    "lastReportDate": self.date
                 }
             ]
         }

@@ -8,7 +8,7 @@ from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
-
+import datetime
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -20,8 +20,9 @@ map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessin
 
 mongoClient = MongoConnector()
 
-
 logging.basicConfig(level=logging.DEBUG)
+
+datetime_format = 'yyyy-mm-dd'
 
 # flutter app will call this endpoint to send image data
 @flutter_bp.route('/process_receipt', methods=['POST'])
@@ -305,17 +306,47 @@ def post_store_products(scanned_receipt):
 
         query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
 
-        doccument = collection.find_one(query)
+        document = collection.find_one(query)
 
-        if doccument:
+        if document:
             # if the store product is in the db, add the id to the product object, update the recent prices
             # store the id
-            scanned_line_item.id = doccument["_id"]
+            scanned_line_item.id = document["_id"]
             # TODO: UPDATE PRICING LOGIC
-            prices = doccument["recentPrices"]
-            prices.append([scanned_line_item.price_per_count, scanned_receipt.date])
-            prices = prices[-5:]
-            update_operation = { '$set' : {'recentPrices' : prices}}
+            curr_price = scanned_line_item.price_per_count
+            curr_date = scanned_line_item.date
+            recent_prices = document["recentPrices"] # list of dicts
+            
+            new_report = {
+                'price': curr_price,
+                'reportCount': 1,
+                'lastReportDate': curr_date
+            }
+            
+            _recent = []
+            curr_date = datetime.strptime(scanned_line_item.date, datetime_format)
+            idx = 0
+            while idx < len(recent_prices):
+                report = recent_prices[idx]
+                last_date = datetime.strptime(report['lastReportDate'], datetime_format)
+                
+                # What if there are multiple prices reported on the same day?
+                if curr_date >= last_date:
+                    if curr_price != report['price']:
+                        _recent.append(new_report)
+                        break
+                    report['lastReportDate'] = curr_date
+                    report['reportCount'] += 1
+                    _recent.append(report)
+                    idx += 1
+                    break
+
+                _recent.append(report)
+                idx += 1        
+            
+            _recent.append(recent_prices[idx:])
+            recent_prices = _recent[-10:] # keep only the last 10 prices
+            update_operation = { '$set' : {'recentPrices' : recent_prices}}
             collection.update_one(query, update_operation)
         else:
             # insert the product, set the id
