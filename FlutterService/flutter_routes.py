@@ -7,6 +7,7 @@ import io
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
+from NameProcessing.EmbeddingVectorManager import EmbeddingVectorManager
 from mongoClient.mongo_client import MongoConnector
 
 
@@ -17,6 +18,7 @@ flutter_bp = Blueprint('flutter_bp', __name__)
 
 decode_processor = NameProcessor(prompt_key="DECODE_PROMPT", cache_path="NameProcessing/.decode_cache.json")
 map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessing/.map_cache.json")
+embedding_vector_manager = EmbeddingVectorManager(cache_path="NameProcessing/.vector_cache.json")
 
 mongoClient = MongoConnector()
 
@@ -73,29 +75,28 @@ def map_receipt():
 
         #go through each generic item from api call
         for i, name in enumerate(generic_names):
+            embedding = embedding_vector_manager.getEmbedding(name)
             agg_pipeline = [
-                                {
-                                    "$search": {
-                                        "text": {
-                                            "query": name,
-                                            "path": "genericName",
-                                            "fuzzy": {
-                                                "maxEdits": 1,
-                                                "maxExpansions": 100
-                                            }
-                                        }
-                                    }
-                                },
-                                {"$limit": 3}, # top 3 matches
-                                {
-                                    "$project": {
-                                        "genericName": 1,
-                                        "_id": 0,
-                                        "score": {"$meta": "searchScore"},
-                                    }
-                                },
-                                {"$sort": {"score": -1}}
-                            ]
+                {
+                    "$search": {
+                        "index": "vector_index",
+                        "vector": {
+                            "path": "vectorEmbedding",
+                            "queryVector": embedding,
+                            "score": {"boost": {"value": 1}},
+                            "k": 3
+                        }
+                    }
+                },
+                {
+                    "$project": {
+                        "genericName": 1,
+                        "_id": 0,
+                        "score": {"$meta": "searchScore"},
+                    }
+                },
+                {"$sort": {"score": -1}}
+            ]
             
             # find existing genericItems in db that are the closest match, and collect their genericNames
             query_results = list(collection.aggregate(agg_pipeline))
