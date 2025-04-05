@@ -4,10 +4,15 @@ from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
+from flask_login import login_user, logout_user, login_required
+from werkzeug.security import generate_password_hash, check_password_hash
+from flasgger import Swagger, swag_from
+from Users.User import User
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
+from FlutterService.ClientErrorMessage import ClientErrorMessage
 
 
 from AzureDIConnection.DIConnection import analyze_receipt
@@ -223,6 +228,7 @@ def get_storeProducts(generic_id):
         cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
         results = list(cur)
 
+        print(f"db query: {results}")
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
@@ -320,3 +326,64 @@ def post_store_products(scanned_receipt):
         else:
             # insert the product, set the id
             scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+
+@flutter_bp.route('/signup', methods=['POST'])
+@swag_from('../swagger/signup.yml')
+def signup():
+    '''Add a new user to the usersdb'''
+    try:
+        collection = mongoClient.get_collection(db="userdb", collection="users")
+        
+        # Get the JSON data from the request, extract the username, add additional fields
+        data = request.json
+        query = {"username": str(data["username"])}
+
+        if collection.count_documents(query) > 0:
+            e = ClientErrorMessage(message="Username taken. Please try a new one.", detail="Username already exists.")
+            return jsonify(e.flutter_response()), 400
+        else:
+            data["password"] = generate_password_hash(data["password"])
+            new_user = User(username=data["username"], password=data["password"])
+
+            collection.insert_one(new_user.get_mongo_entry())
+            return jsonify({"message": "User added successfully"}), 200
+        
+    except Exception as e:
+        print("unable to add")
+        return f"An error occurred: {e}"
+
+@flutter_bp.route('/login', methods=['POST'])
+@swag_from('../swagger/login.yml')
+def login():
+    '''Login user using username and password'''
+    try:
+        collection = mongoClient.get_collection(db="userdb", collection="users")
+        
+        # Get the JSON data from the request
+        data = request.json
+        query = {"username": str(data["username"])}
+
+        mongo_entry = collection.find_one(query)
+
+        if not mongo_entry:
+            e = ClientErrorMessage(message="Username not found.", detail="Username does not match any existing users.")
+            return jsonify(e.flutter_response()), 400
+        if not check_password_hash(mongo_entry["password"], data["password"]):
+            e = ClientErrorMessage(message="Incorrect password.", detail="Username found, password does not match.")
+            return jsonify(e.flutter_response()), 400
+        else:
+            user = User(id=str(mongo_entry["_id"]), username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
+            login_user(user)
+            return jsonify({'message': 'User logged in', 'user details': user.flutter_response()}), 200
+        
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+@flutter_bp.route('/logout', methods=['POST'])
+@login_required
+@swag_from('../swagger/logout.yml')
+def logout():
+    '''Logout user'''
+    print(request)
+    logout_user()
+    return jsonify({"message": "Logout successful"})
