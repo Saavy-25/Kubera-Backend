@@ -278,13 +278,18 @@ def post_generic_items(scanned_receipt):
     collection = mongoClient.get_collection(db="grocerydb", collection="genericItems")
 
     for scanned_line_item in scanned_receipt.scanned_line_items:
+        generic_name = scanned_line_item.generic_matches[0]
+        document = collection.find_one({"genericName": generic_name})
 
-        doccument = collection.find_one({"genericName": scanned_line_item.generic_matches[0]})
-
-        if doccument:
-            scanned_line_item.generic_id = doccument["_id"]
+        if document:
+            scanned_line_item.generic_id = document["_id"]
         else:
-            scanned_line_item.generic_id = collection.insert_one({"genericName": scanned_line_item.generic_matches[0]}).inserted_id
+            vector_embedding = embedding_vector_manager.getEmbedding(generic_name)
+            new_document = {
+                "genericName": generic_name,
+                "vectorEmbedding": vector_embedding
+            }
+            scanned_line_item.generic_id = collection.insert_one(new_document).inserted_id
 
 def post_store_products(scanned_receipt):
     '''find/create the product id for the given product'''
@@ -306,14 +311,14 @@ def post_store_products(scanned_receipt):
 
         query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
 
-        doccument = collection.find_one(query)
+        document = collection.find_one(query)
 
-        if doccument:
+        if document:
             # if the store product is in the db, add the id to the product object, update the recent prices
             # store the id
-            scanned_line_item.id = doccument["_id"]
+            scanned_line_item.id = document["_id"]
             # TODO: UPDATE PRICING LOGIC
-            prices = doccument["recentPrices"]
+            prices = document["recentPrices"]
             prices.append([scanned_line_item.price_per_count, scanned_receipt.date])
             prices = prices[-5:]
             update_operation = { '$set' : {'recentPrices' : prices}}
