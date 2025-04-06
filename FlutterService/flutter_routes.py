@@ -124,7 +124,7 @@ def map_receipt():
 @flutter_bp.route('/post_receipt', methods=['POST'])
 def post_receipt():
     try:
-        if request.headers.get('set-cookie') and not current_user.is_authenticated:
+        if not (request.headers.get('set-cookie') and current_user.is_authenticated):
             logging.error(f"Frontend login session not in sync with server")
             e = ClientErrorMessage(message="Our servers lost your login session, please log in again and rescan receipt.", detail="Frontend login session not in sync with server")
             return jsonify(e.flutter_response()), 401
