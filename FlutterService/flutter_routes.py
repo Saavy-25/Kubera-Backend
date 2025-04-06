@@ -4,7 +4,7 @@ from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
-from flask_login import login_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
 from Users.User import User
@@ -124,6 +124,11 @@ def map_receipt():
 @flutter_bp.route('/post_receipt', methods=['POST'])
 def post_receipt():
     try:
+        if request.headers.get('set-cookie') and not current_user.is_authenticated:
+            logging.error(f"Frontend login session not in sync with server")
+            e = ClientErrorMessage(message="Our servers lost your login session, please log in again and rescan receipt.", detail="Frontend login session not in sync with server")
+            return jsonify(e.flutter_response()), 401
+
         data = request.get_json()
         scanned_receipt = extract_receipt(data)
        
@@ -133,14 +138,25 @@ def post_receipt():
         # now add the receipt to the receipt db
         # Access the database and collection
         collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
-        result = collection.insert_one(scanned_receipt.get_mongo_entry())
+        receipt_id = collection.insert_one(scanned_receipt.get_mongo_entry()).inserted_id
+        
+        if current_user.is_authenticated:
+            # Add the receipt ID to the user's receipt IDs
+            logging.debug(f"User authenticated")
+            user_collection = mongoClient.get_collection(db="userdb", collection="users")
+            query = {"username": current_user.username}
+            current_user.receipt_ids.append(receipt_id)
+            update_operation = { '$set' : {'receiptIds' : current_user.receipt_ids}}
+            user_collection.update_one(query, update_operation)
+            
     
-        logging.debug(f"Data from mongo: {result}")
+        logging.debug(f"Data from mongo: {receipt_id}")
         
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logging.error(f"Error posting receipt to MongoDB: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        e = ClientErrorMessage(message="We are having trouble saving your recipt, please try again.", detail=str(e))
+        return jsonify(e.flutter_response()), 500
 
 
 @flutter_bp.route('/get_data', methods=['GET'])
@@ -372,7 +388,14 @@ def login():
             e = ClientErrorMessage(message="Incorrect password.", detail="Username found, password does not match.")
             return jsonify(e.flutter_response()), 400
         else:
-            user = User(id=str(mongo_entry["_id"]), username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
+            user = User(
+                        id=str(mongo_entry["_id"]),
+                        username=mongo_entry["username"],
+                        password=mongo_entry["password"],
+                        receipt_ids= [str(x)for x in mongo_entry["receiptIds"]],
+                        shopping_list_ids=[str(x) for x in mongo_entry["shoppingListIds"]],
+                        favorite_store_ids=[str(x) for x in mongo_entry["favoriteStoreIds"]]
+                        )
             login_user(user)
             return jsonify({'message': 'User logged in', 'user details': user.flutter_response()}), 200
         
