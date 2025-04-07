@@ -1,3 +1,4 @@
+from collections import defaultdict, deque
 import logging
 from PIL import Image
 from bson import ObjectId
@@ -339,6 +340,8 @@ def update_recent_prices(curr_price, curr_date, recent_prices):
     if idx < len(recent_prices):
         for p in recent_prices[idx:]:
             _recent.append(p)
+
+    # _recent = squash_reports(_recent)
     
     return _recent[:10]
 
@@ -352,15 +355,44 @@ def insert_report(recent_prices, new_report):
         report = recent_prices[idx]
         last_date = datetime.strptime(report['lastReportDate'], datetime_format)
         
-        if curr_date >= last_date:
+        if curr_date > last_date:
             if curr_price != report['price']:
+                # New price reported latest
                 _recent.append(new_report)
                 return _recent, idx
             
+            # Same price reported latest
             report['lastReportDate'] = new_report['lastReportDate']
             report['reportCount'] += 1
             _recent.append(report)
             idx += 1
+            return _recent, idx
+        
+        # Price reported on a recorded date
+        if curr_date == last_date:
+            same_date_prices = []
+
+            i = idx
+            inserted = False
+            # Look through all prices reported on the same date
+            while i < len(recent_prices) and recent_prices[i]['lastReportDate'] == new_report['lastReportDate']:
+                if recent_prices[i]['price'] == curr_price:
+                    recent_prices[i]['reportCount'] += 1
+                    same_date_prices.append(recent_prices[i])
+                    inserted = True
+                else:
+                    same_date_prices.append(recent_prices[i])
+                i += 1
+            
+            if not inserted:
+                same_date_prices.append(new_report)
+            
+            same_date_prices.sort(key=lambda x: x['reportCount'], reverse=True)
+
+            for price in same_date_prices:
+                _recent.append(price)
+            
+            idx = i # idx tells the upper level method where to start slicing and appending the rest of the recent prices array
             return _recent, idx
 
         _recent.append(report)
@@ -368,3 +400,28 @@ def insert_report(recent_prices, new_report):
     
     _recent.append(new_report)
     return _recent, idx
+
+## WIP, not necessary for final deliverable, more like wishful thinking that we'd have this mechanism
+# def squash_reports(recent):
+#     # Group reports by lastReportDate
+#     grouped_reports = defaultdict(list)
+#     for report in recent:
+#         grouped_reports[report['lastReportDate']].append(report)
+
+#     squashed = []
+#     for date, reports in grouped_reports.items():
+#         if len(reports) == 1:
+#             squashed.append(reports[0])
+#             continue
+
+#         # Sort reports by reportCount in descending order
+#         reports.sort(key=lambda x: x['reportCount'], reverse=True)
+
+#         # Check if the change between the highest and second highest reportCount is >= 50%
+#         if len(reports) > 1 and (reports[0]['reportCount'] - reports[1]['reportCount']) / reports[1]['reportCount'] >= 0.5:
+#             squashed.append(reports[0])
+#             continue
+#         else:
+#             squashed.extend(reports)
+
+#     return squashed
