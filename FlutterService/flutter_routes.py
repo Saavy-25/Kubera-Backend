@@ -353,10 +353,11 @@ def post_store_products(scanned_receipt):
 def get_dashboard_data(user_id):
     try:
         collection = mongoClient.get_collection(db="dashboarddb", collection="dashboard")
-        user_dashboard_data = collection.find_one({"_userId": user_id}, {'_id': 0}) #each user has one dashboard
+        user_dashboard_data = collection.find_one({"_userId": user_id}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
             return jsonify(user_dashboard_data), 200
         else:
-            return jsonify({"error": "No dashboard found with the given userID"}), 404
+            # user has not uploaded any receipts yet
+            return jsonify({"message": "No dashboard data available yet."}), 200
     except Exception as e:
         return f"An error occurred: {e}", 400

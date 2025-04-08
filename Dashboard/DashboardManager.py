@@ -1,20 +1,17 @@
-from pymongo import MongoClient
 from datetime import datetime, timedelta
-from collections import defaultdict
 
 class DashboardManager:
     def __init__(self):
        pass
     
     def update_dashboard(self, dashboard, scanned_receipt):
-        self.update_weekly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
-        self.update_monthly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
-        self.update_yearly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
+        self.__update_weekly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
+        self.__update_monthly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
+        self.__update_yearly_spending(dashboard, scanned_receipt.date, scanned_receipt.total_receipt_price)
 
-        
-        self.update_favorite_item_of_the_month(dashboard, scanned_receipt)
-        self.update_most_expensive_item(dashboard, scanned_receipt)
-
+        self.__update_average_grocery_run_cost(dashboard, scanned_receipt)
+        self.__update_favorite_item_of_the_month(dashboard, scanned_receipt)
+        self.__update_most_expensive_item(dashboard, scanned_receipt)
 
     def __update_weekly_spending(self, dashboard, receipt_date, total_price):
         receipt_date = datetime.strptime(receipt_date, '%Y-%m-%d').date()
@@ -52,14 +49,14 @@ class DashboardManager:
         else:
             dashboard.yearly_spending[year_key] = total_price
 
-def update_average_grocery_run_cost(self, receipt, dashboard):
-    dashboard.total_runs = dashboard.total_runs or 0
-    
-    # calculate and update average
-    dashboard.average_grocery_run_cost = ((dashboard.average_grocery_run_cost * dashboard.total_runs) + receipt.total_receipt_price) / (dashboard.total_runs + 1)
-    
-    # update total runs
-    dashboard.total_runs += 1
+    def __update_average_grocery_run_cost(self, dashboard, scanned_receipt):
+        dashboard.total_runs = dashboard.total_runs or 0
+        
+        # calculate and update average
+        dashboard.average_grocery_run_cost = ((dashboard.average_grocery_run_cost * dashboard.total_runs) + scanned_receipt.total_receipt_price) / (dashboard.total_runs + 1)
+        
+        # update total runs
+        dashboard.total_runs += 1
 
     def __update_favorite_item_of_the_month(self, dashboard, scanned_receipt):
         # only update if the receipt is from the current month
@@ -69,7 +66,7 @@ def update_average_grocery_run_cost(self, receipt, dashboard):
         if receipt_month != current_month:
             return  
 
-        self.update_item_frequency(dashboard, scanned_receipt)
+        self.__update_item_frequency(dashboard, scanned_receipt)
 
         # find the most frequent item
         most_frequent_id = max(
@@ -103,7 +100,7 @@ def update_average_grocery_run_cost(self, receipt, dashboard):
                     dashboard.current_month_item_frequency.get(item.generic_id, 0) + 1
                 )
 
-    def __update_most_expensive_item(dashboard, scanned_receipt):
+    def __update_most_expensive_item(self, dashboard, scanned_receipt):
         # only update if the receipt is from the current month
         receipt_month = scanned_receipt.date[:7]
         current_month = datetime.today().strftime("%Y-%m")
