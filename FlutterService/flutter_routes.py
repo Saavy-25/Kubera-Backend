@@ -78,21 +78,19 @@ def map_receipt():
             embedding = embedding_vector_manager.getEmbedding(name)
             agg_pipeline = [
                 {
-                    "$search": {
-                        "index": "vector_index",
-                        "vector": {
-                            "path": "vectorEmbedding",
-                            "queryVector": embedding,
-                            "score": {"boost": {"value": 1}},
-                            "k": 3
-                        }
+                    "$vectorSearch": {
+                        "index": "vector_index",                       
+                        "path": "vectorEmbedding",
+                        "queryVector": embedding,
+                        "score": {"boost": {"value": 1}},
+                        "limit": 3      
                     }
                 },
                 {
                     "$project": {
                         "genericName": 1,
                         "_id": 0,
-                        "score": {"$meta": "searchScore"},
+                        "score": {"$meta": "vectorSearchScore"},
                     }
                 },
                 {"$sort": {"score": -1}}
