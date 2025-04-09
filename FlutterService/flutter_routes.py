@@ -2,7 +2,7 @@ import logging
 from PIL import Image
 from bson import ObjectId
 from bson.json_util import loads, dumps
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify
 import io
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
@@ -19,9 +19,6 @@ decode_processor = NameProcessor(prompt_key="DECODE_PROMPT", cache_path="NamePro
 map_processor = NameProcessor(prompt_key="MAP_PROMPT", cache_path="NameProcessing/.map_cache.json")
 
 mongoClient = MongoConnector()
-env = "prod"
-if current_app.config['ENV'] is 'development':
-    env = "dev"
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -71,7 +68,7 @@ def map_receipt():
         # get mapped name list
         generic_names = map_processor.processNames(product_names)
 
-        collection = mongoClient.get_collection(db=env, collection="genericItems")
+        collection = mongoClient.get_collection(collection="genericItems")
 
         #go through each generic item from api call
         for i, name in enumerate(generic_names):
@@ -129,7 +126,7 @@ def post_receipt():
         
         # now add the receipt to the receipt db
         # Access the database and collection
-        collection = mongoClient.get_collection(db=env, collection="receipts")
+        collection = mongoClient.get_collection(collection="receipts")
         result = collection.insert_one(scanned_receipt.get_mongo_entry())
     
         logging.debug(f"Data from mongo: {result}")
@@ -149,7 +146,7 @@ def receive_data():
 @flutter_bp.route('/search_generic', methods=['GET'])
 def search_generic():
     try:
-        collection = mongoClient.get_collection(db=env, collection="genericItems")
+        collection = mongoClient.get_collection(collection="genericItems")
             
         query = request.args.get("query")
         if not query:
@@ -221,7 +218,7 @@ def search_generic():
 @flutter_bp.route('/get_storeProducts/<generic_id>', methods=['GET'])
 def get_storeProducts(generic_id):
     try:
-        collection = mongoClient.get_collection(db=env, collection="storeProducts")
+        collection = mongoClient.get_collection(collection="storeProducts")
         cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
         results = list(cur)
 
@@ -236,7 +233,7 @@ def get_productDetails(product_id):
         if not product_id:
             return jsonify({"error": "productId parameter is required"}), 400
         
-        collection = mongoClient.get_collection(db=env, collection="storeProducts")
+        collection = mongoClient.get_collection(collection="storeProducts")
         result = collection.find_one({"_id": ObjectId(product_id)}, {'recentPrices': 1, "_id": 0})
         if not result:
             return jsonify({"error": "No product found with the given ID"}), 404
@@ -276,7 +273,7 @@ def post_generic_items(scanned_receipt):
     '''find/create the generic id for the given product'''
     # if the generic item is in the db, add the id to the product object
     # if the generic items is not in the db, add the generic item to the db and add the id to the product object
-    collection = mongoClient.get_collection(db=env, collection="genericItems")
+    collection = mongoClient.get_collection(collection="genericItems")
 
     for scanned_line_item in scanned_receipt.scanned_line_items:
 
@@ -295,7 +292,7 @@ def post_store_products(scanned_receipt):
 
     # if the store product is in the db, add the id to the product object, update the recent prices
     # if the store product is not in the db, add the store product to the db and then add the id to the product object
-    collection = mongoClient.get_collection(db=env, collection="storeProducts")
+    collection = mongoClient.get_collection(collection="storeProducts")
 
     for scanned_line_item in scanned_receipt.scanned_line_items:
 
