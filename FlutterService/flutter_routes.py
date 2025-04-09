@@ -92,7 +92,6 @@ def map_receipt():
                         "score": {"$meta": "vectorSearchScore"},
                     }
                 },
-                {"$sort": {"score": -1}}
             ]
 
             # find existing genericItems in db that are the closest match, and collect their genericNames
