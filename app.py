@@ -19,6 +19,17 @@ from FlutterService.flutter_routes import flutter_bp
 
 # Initialize flask app and swagger page
 app = Flask(__name__)
+
+# If running on Azure App Service, dynamically set prod/dev
+AZURE_DEPLOYMENT = 'WEBSITE_HOSTNAME' in os.environ
+
+if AZURE_DEPLOYMENT:
+    app.config['ENV'] = 'production'
+    app.config['DEBUG'] = False
+else:
+    app.config['ENV'] = 'development'
+    app.config['DEBUG'] = True
+
 CORS(app)
 app.config['SWAGGER'] = {
     'title': 'Kubera API',
