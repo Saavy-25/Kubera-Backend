@@ -21,7 +21,7 @@ class MongoConnector:
     
     def get_collection(self, collection):
         # Returns a reference to a specific collection to avoid race condition
-        if not self.db:
+        if self.db is None:
             raise Exception("Database not set. set_db(db_name) should have been called during initialization.")
         return self.db[collection]
 
