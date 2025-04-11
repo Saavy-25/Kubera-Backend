@@ -1,3 +1,4 @@
+from collections import defaultdict, deque
 import logging
 from PIL import Image
 from bson import ObjectId
@@ -17,7 +18,7 @@ from NameProcessing.EmbeddingVectorManager import EmbeddingVectorManager
 from mongoClient.mongo_client import MongoConnector
 from flask_login import current_user
 from FlutterService.ClientErrorMessage import ClientErrorMessage
-
+from datetime import datetime
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -30,8 +31,9 @@ embedding_vector_manager = EmbeddingVectorManager(cache_path="NameProcessing/.ve
 
 mongoClient = MongoConnector()
 
-
 logging.basicConfig(level=logging.DEBUG)
+
+datetime_format = '%Y-%m-%d' # yyyy-mm-dd format
 
 # flutter app will call this endpoint to send image data
 @flutter_bp.route('/process_receipt', methods=['POST'])
@@ -205,17 +207,6 @@ def search_generic():
                     "compound": {
                         "should": [
                             {
-                                "autocomplete": {
-                                    "query": query,
-                                    "path": "genericName",
-                                    "tokenOrder": "any",
-                                    "fuzzy": {
-                                        "maxEdits": 1,
-                                        "maxExpansions": 100
-                                    },
-                                }
-                            },
-                            {
                                 "text": {
                                     "query": query,
                                     "path": "genericName",
@@ -341,37 +332,140 @@ def post_store_products(scanned_receipt):
     '''find/create the product id for the given product'''
 
     # should call post generic items first, to make sure that each posted product has a generic id
-    post_generic_items(scanned_receipt)
+    try:
+        post_generic_items(scanned_receipt)
 
-    # if the store product is in the db, add the id to the product object, update the recent prices
-    # if the store product is not in the db, add the store product to the db and then add the id to the product object
-    collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
+        # if the store product is in the db, add the id to the product object, update the recent prices
+        # if the store product is not in the db, add the store product to the db and then add the id to the product object
+        collection = mongoClient.get_collection(db="grocerydb", collection="storeProducts")
 
-    for scanned_line_item in scanned_receipt.scanned_line_items:
+        for scanned_line_item in scanned_receipt.scanned_line_items:
 
-        scanned_line_item.store_name = scanned_receipt.store_name
-        scanned_line_item.date = scanned_receipt.date
+            scanned_line_item.store_name = scanned_receipt.store_name
+            scanned_line_item.date = scanned_receipt.date
 
-        if not (scanned_line_item.store_product_name and scanned_line_item.store_name and scanned_line_item.generic_id and scanned_line_item.price_per_count and scanned_line_item.date):
-            ValueError("Valid store product required to create a store product")
+            if not (scanned_line_item.store_product_name and scanned_line_item.store_name and scanned_line_item.generic_id and scanned_line_item.price_per_count and scanned_line_item.date):
+                ValueError("Valid store product required to create a store product")
 
-        query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
+            query = {"storeProductName": scanned_line_item.store_product_name, "storeName": scanned_receipt.store_name}
 
-        document = collection.find_one(query)
+            document = collection.find_one(query)
 
-        if document:
-            # if the store product is in the db, add the id to the product object, update the recent prices
-            # store the id
-            scanned_line_item.id = document["_id"]
-            # TODO: UPDATE PRICING LOGIC
-            prices = document["recentPrices"]
-            prices.append([scanned_line_item.price_per_count, scanned_receipt.date])
-            prices = prices[-5:]
-            update_operation = { '$set' : {'recentPrices' : prices}}
-            collection.update_one(query, update_operation)
-        else:
-            # insert the product, set the id
-            scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+            if document:
+                # if the store product is in the db, add the id to the product object, update the recent prices
+                # store the id
+                scanned_line_item.id = document["_id"]
+
+                curr_price = scanned_line_item.price_per_count
+                curr_date = scanned_line_item.date
+                recent_prices = update_recent_prices(curr_price, curr_date, document['recentPrices'])
+
+                update_operation = { '$set' : {'recentPrices' : recent_prices}}
+                collection.update_one(query, update_operation)
+            else:
+                # insert the product, set the id
+                scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+    except Exception as e:
+        logging.debug('An error has occurred: ', e)
+    except ValueError as ve:
+        logging.debug(ve)
+
+def update_recent_prices(curr_price, curr_date, recent_prices):
+    new_report = {
+                'price': curr_price,
+                'reportCount': 1,
+                'lastReportDate': curr_date
+            }
+            
+    _recent, idx = insert_report(recent_prices, new_report)
+    if idx < len(recent_prices):
+        for p in recent_prices[idx:]:
+            _recent.append(p)
+
+    # _recent = squash_reports(_recent)
+    
+    return _recent[:10]
+
+def insert_report(recent_prices, new_report):
+    _recent = []
+    curr_date = datetime.strptime(new_report['lastReportDate'], datetime_format)
+    curr_price = new_report['price']
+
+    idx = 0
+    while idx < len(recent_prices):
+        report = recent_prices[idx]
+        last_date = datetime.strptime(report['lastReportDate'], datetime_format)
+        
+        if curr_date > last_date:
+            if curr_price != report['price']:
+                # New price reported latest
+                _recent.append(new_report)
+                return _recent, idx
+            
+            # Same price reported latest
+            report['lastReportDate'] = new_report['lastReportDate']
+            report['reportCount'] += 1
+            _recent.append(report)
+            idx += 1
+            return _recent, idx
+        
+        # Price reported on a recorded date
+        if curr_date == last_date:
+            same_date_prices = []
+
+            i = idx
+            inserted = False
+            # Look through all prices reported on the same date
+            while i < len(recent_prices) and recent_prices[i]['lastReportDate'] == new_report['lastReportDate']:
+                if recent_prices[i]['price'] == curr_price:
+                    recent_prices[i]['reportCount'] += 1
+                    same_date_prices.append(recent_prices[i])
+                    inserted = True
+                else:
+                    same_date_prices.append(recent_prices[i])
+                i += 1
+            
+            if not inserted:
+                same_date_prices.append(new_report)
+            
+            same_date_prices.sort(key=lambda x: x['reportCount'], reverse=True)
+
+            for price in same_date_prices:
+                _recent.append(price)
+            
+            idx = i # idx tells the upper level method where to start slicing and appending the rest of the recent prices array
+            return _recent, idx
+
+        _recent.append(report)
+        idx += 1      
+    
+    _recent.append(new_report)
+    return _recent, idx
+
+## WIP, not necessary for final deliverable, more like wishful thinking that we'd have this mechanism
+# def squash_reports(recent):
+#     # Group reports by lastReportDate
+#     grouped_reports = defaultdict(list)
+#     for report in recent:
+#         grouped_reports[report['lastReportDate']].append(report)
+
+#     squashed = []
+#     for date, reports in grouped_reports.items():
+#         if len(reports) == 1:
+#             squashed.append(reports[0])
+#             continue
+
+#         # Sort reports by reportCount in descending order
+#         reports.sort(key=lambda x: x['reportCount'], reverse=True)
+
+#         # Check if the change between the highest and second highest reportCount is >= 50%
+#         if len(reports) > 1 and (reports[0]['reportCount'] - reports[1]['reportCount']) / reports[1]['reportCount'] >= 0.5:
+#             squashed.append(reports[0])
+#             continue
+#         else:
+#             squashed.extend(reports)
+
+#     return squashed
 
 @flutter_bp.route('/get_dashboard_data', methods=["GET"])
 @login_required
