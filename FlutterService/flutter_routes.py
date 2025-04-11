@@ -141,7 +141,7 @@ def post_receipt():
         # now add the receipt to the receipt db
         # Access the database and collection
         collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
-        receipt_id = collection.insert_one(scanned_receipt.get_mongo_entry()).inserted_id
+        receipt_id = str(collection.insert_one(scanned_receipt.get_mongo_entry()).inserted_id)
         
         if current_user.is_authenticated:
             # Add the receipt ID to the user's receipt IDs
@@ -159,13 +159,13 @@ def post_receipt():
         if current_user.is_authenticated:
             # get dashboard data from database with user_id
             collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
-            dashboard_data = collection.find_one({"_userId": current_user.get_id()})
+            dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0})
 
             # create Dashboard object
             if dashboard_data:
                 dashboard = Dashboard(**dashboard_data)
             else:
-                dashboard = Dashboard(current_user.get_id())  # create an empty Dashboard if none exists
+                dashboard = Dashboard(current_user.username)  # create an empty Dashboard if none exists
 
             # update dashboard data
             dashboard_manager = DashboardManager()
@@ -173,7 +173,7 @@ def post_receipt():
 
             # update dashboard in the database
             collection.update_one(
-                {"_userId": dashboard._user_id},
+                {"username": dashboard.username},
                 {"$set": dashboard.get_mongo_entry()},
                 upsert=True
             )
@@ -376,8 +376,8 @@ def post_store_products(scanned_receipt):
 @login_required
 def get_dashboard_data():
     try:
-        collection = mongoClient.get_collection(db="dashboarddb", collection="dashboard")
-        user_dashboard_data = collection.find_one({"_userId": current_user.user_id}, {'_id': 0}) # each user has one dashboard
+        collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+        user_dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
             return jsonify(user_dashboard_data), 200
         else:
