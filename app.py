@@ -19,6 +19,7 @@ from FlutterService.flutter_routes import flutter_bp
 
 # Initialize flask app and swagger page
 app = Flask(__name__)
+
 CORS(app)
 app.config['SWAGGER'] = {
     'title': 'Kubera API',
@@ -38,7 +39,20 @@ app.secret_key = secrets.token_hex(16)
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("pymongo").setLevel(logging.ERROR) # Suppress pymongo logging
 
+# If running on Azure App Service, dynamically set prod/dev
+ENV = "prod"
+AZURE_DEPLOYMENT = 'WEBSITE_HOSTNAME' in os.environ
+
+if AZURE_DEPLOYMENT:
+    app.config['ENV'] = 'production'
+    app.config['DEBUG'] = False
+else:
+    app.config['ENV'] = 'development'
+    app.config['DEBUG'] = True
+    ENV = "dev"
+
 mongoClient = MongoConnector()
+mongoClient.set_db(ENV)
 
 @app.route("/")
 def home():
@@ -53,7 +67,7 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(username):
     '''Function required by LoginManager'''
-    collection = mongoClient.get_collection(db="userdb", collection="users")
+    collection = mongoClient.get_collection(collection="users")
     query = {"username": username}
     mongo_entry = collection.find_one(query)
     return User(id=str(mongo_entry["_id"]), username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
