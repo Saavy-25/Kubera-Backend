@@ -443,7 +443,7 @@ def add_item_to_list():
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
-@flutter_bp.route('/check_list_item', methods=["POST"])
+@flutter_bp.route('/check_uncheck_list_item', methods=["POST"])
 def check_list_item():
     try:      
         data = request.json
@@ -455,6 +455,19 @@ def check_list_item():
 
         shopping_list_collection = mongoClient.get_collection(db="dev", collection="shoppingLists")
 
+        # First, find the current state of the item
+        shopping_list = shopping_list_collection.find_one(
+            {"_id": ObjectId(list_id), "items.storeProductId": store_product_id},
+            {"items.$": 1}
+        )
+
+        if not shopping_list or "items" not in shopping_list or not shopping_list["items"]:
+            return jsonify({"error": "Item not found in the list"}), 404
+
+        current_retrieved = shopping_list["items"][0].get("retrieved", False)
+        new_value = not current_retrieved
+
+        # Update val to opposite
         result = shopping_list_collection.update_one(
             {
                 "_id": ObjectId(list_id),
@@ -462,7 +475,7 @@ def check_list_item():
             },
             {
                 "$set": {
-                    "items.$.retrieved": True
+                    "items.$.retrieved": new_value
                 }
             }
         )
