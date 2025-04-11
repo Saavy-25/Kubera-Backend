@@ -16,9 +16,14 @@ class MongoConnector:
             cls._instance.collection = None
         return cls._instance
     
-    def get_collection(self, db, collection):
+    def set_db(self, db_name):
+        self.db = self.client[db_name]
+    
+    def get_collection(self, collection):
         # Returns a reference to a specific collection to avoid race condition
-        return self.client[db][collection]
+        if self.db is None:
+            raise Exception("Database not set. set_db(db_name) should have been called during initialization.")
+        return self.db[collection]
 
     def close(self):
         if self.client is not None:
