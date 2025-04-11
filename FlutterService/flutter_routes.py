@@ -138,13 +138,13 @@ def post_receipt():
         
         # now add the receipt to the receipt db
         # Access the database and collection
-        collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
+        collection = mongoClient.get_collection(collection="receipts")
         receipt_id = str(collection.insert_one(scanned_receipt.get_mongo_entry()).inserted_id)
         
         if current_user.is_authenticated:
             # Add the receipt ID to the user's receipt IDs
             logging.debug(f"User authenticated")
-            user_collection = mongoClient.get_collection(db="userdb", collection="users")
+            user_collection = mongoClient.get_collection(collection="users")
             query = {"username": current_user.username}
             current_user.receipt_ids.append(receipt_id)
             update_operation = { '$set' : {'receiptIds' : current_user.receipt_ids}}
@@ -156,7 +156,7 @@ def post_receipt():
         # update data for dashboard analytics if user is logged in
         if current_user.is_authenticated:
             # get dashboard data from database with user_id
-            collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+            collection = mongoClient.get_collection(collection="dashboards")
             dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0})
 
             # create Dashboard object
@@ -471,7 +471,7 @@ def insert_report(recent_prices, new_report):
 @login_required
 def get_dashboard_data():
     try:
-        collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+        collection = mongoClient.get_collection(collection="dashboards")
         user_dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
             return jsonify(user_dashboard_data), 200
@@ -486,7 +486,7 @@ def get_dashboard_data():
 def signup():
     '''Add a new user to the usersdb'''
     try:
-        collection = mongoClient.get_collection(db="userdb", collection="users")
+        collection = mongoClient.get_collection(collection="users")
         
         # Get the JSON data from the request, extract the username, add additional fields
         data = request.json
@@ -511,7 +511,7 @@ def signup():
 def login():
     '''Login user using username and password'''
     try:
-        collection = mongoClient.get_collection(db="userdb", collection="users")
+        collection = mongoClient.get_collection(collection="users")
         
         # Get the JSON data from the request
         data = request.json
