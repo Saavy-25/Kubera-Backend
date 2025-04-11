@@ -5,10 +5,18 @@ from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
+from Dashboard.Dashboard import Dashboard
+from Dashboard.DashboardManager import DashboardManager
+from flask_login import login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
+from flasgger import Swagger, swag_from
+from Users.User import User
 from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
+from flask_login import current_user
+from FlutterService.ClientErrorMessage import ClientErrorMessage
 from datetime import datetime
 
 from AzureDIConnection.DIConnection import analyze_receipt
@@ -121,6 +129,11 @@ def map_receipt():
 @flutter_bp.route('/post_receipt', methods=['POST'])
 def post_receipt():
     try:
+        if request.cookies and request.cookies['session'] and not current_user.is_authenticated:
+            logging.error(f"Frontend login session not in sync with server")
+            e = ClientErrorMessage(message="Our servers lost your login session, please log in again and rescan receipt.", detail="Frontend login session not in sync with server")
+            return jsonify(e.flutter_response()), 401
+
         data = request.get_json()
         scanned_receipt = extract_receipt(data)
        
@@ -130,14 +143,51 @@ def post_receipt():
         # now add the receipt to the receipt db
         # Access the database and collection
         collection = mongoClient.get_collection(db="receiptdb", collection="receipts")
-        result = collection.insert_one(scanned_receipt.get_mongo_entry())
-    
-        logging.debug(f"Data from mongo: {result}")
+        receipt_id = str(collection.insert_one(scanned_receipt.get_mongo_entry()).inserted_id)
         
+        if current_user.is_authenticated:
+            # Add the receipt ID to the user's receipt IDs
+            logging.debug(f"User authenticated")
+            user_collection = mongoClient.get_collection(db="userdb", collection="users")
+            query = {"username": current_user.username}
+            current_user.receipt_ids.append(receipt_id)
+            update_operation = { '$set' : {'receiptIds' : current_user.receipt_ids}}
+            user_collection.update_one(query, update_operation)
+            
+    
+        logging.debug(f"Data from mongo: {receipt_id}")
+        
+        # update data for dashboard analytics if user is logged in
+        if current_user.is_authenticated:
+            # get dashboard data from database with user_id
+            collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+            dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0})
+
+            # create Dashboard object
+            if dashboard_data:
+                dashboard = Dashboard(**dashboard_data)
+            else:
+                dashboard = Dashboard(current_user.username)  # create an empty Dashboard if none exists
+
+            # update dashboard data
+            dashboard_manager = DashboardManager()
+            dashboard_manager.update_dashboard(dashboard, scanned_receipt)
+
+            # update dashboard in the database
+            collection.update_one(
+                {"username": dashboard.username},
+                {"$set": dashboard.get_mongo_entry()},
+                upsert=True
+            )
+            
+            logging.debug("Dashboard updated successfully.")
+
+
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logging.error(f"Error posting receipt to MongoDB: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        e = ClientErrorMessage(message="We are having trouble saving your recipt, please try again.", detail=str(e))
+        return jsonify(e.flutter_response()), 500
 
 
 @flutter_bp.route('/get_data', methods=['GET'])
@@ -214,6 +264,7 @@ def get_storeProducts(generic_id):
         cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
         results = list(cur)
 
+        print(f"db query: {results}")
         return jsonify(results), 200
     except Exception as e:
         return f"An error occurred: {e}", 400
@@ -414,3 +465,85 @@ def insert_report(recent_prices, new_report):
 #             squashed.extend(reports)
 
 #     return squashed
+
+@flutter_bp.route('/get_dashboard_data', methods=["GET"])
+@login_required
+def get_dashboard_data():
+    try:
+        collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+        user_dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0}) # each user has one dashboard
+        if user_dashboard_data:
+            return jsonify(user_dashboard_data), 200
+        else:
+            # user has not uploaded any receipts yet
+            return jsonify({"message": "No dashboard data available yet."}), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
+
+@flutter_bp.route('/signup', methods=['POST'])
+@swag_from('../swagger/signup.yml')
+def signup():
+    '''Add a new user to the usersdb'''
+    try:
+        collection = mongoClient.get_collection(db="userdb", collection="users")
+        
+        # Get the JSON data from the request, extract the username, add additional fields
+        data = request.json
+        query = {"username": str(data["username"])}
+
+        if collection.count_documents(query) > 0:
+            e = ClientErrorMessage(message="Username taken. Please try a new one.", detail="Username already exists.")
+            return jsonify(e.flutter_response()), 400
+        else:
+            data["password"] = generate_password_hash(data["password"])
+            new_user = User(username=data["username"], password=data["password"])
+
+            collection.insert_one(new_user.get_mongo_entry())
+            return jsonify({"message": "User added successfully"}), 200
+        
+    except Exception as e:
+        print("unable to add")
+        return f"An error occurred: {e}"
+
+@flutter_bp.route('/login', methods=['POST'])
+@swag_from('../swagger/login.yml')
+def login():
+    '''Login user using username and password'''
+    try:
+        collection = mongoClient.get_collection(db="userdb", collection="users")
+        
+        # Get the JSON data from the request
+        data = request.json
+        query = {"username": str(data["username"])}
+
+        mongo_entry = collection.find_one(query)
+
+        if not mongo_entry:
+            e = ClientErrorMessage(message="Username not found.", detail="Username does not match any existing users.")
+            return jsonify(e.flutter_response()), 400
+        if not check_password_hash(mongo_entry["password"], data["password"]):
+            e = ClientErrorMessage(message="Incorrect password.", detail="Username found, password does not match.")
+            return jsonify(e.flutter_response()), 400
+        else:
+            user = User(
+                        id=str(mongo_entry["_id"]),
+                        username=mongo_entry["username"],
+                        password=mongo_entry["password"],
+                        receipt_ids= [str(x)for x in mongo_entry["receiptIds"]],
+                        shopping_list_ids=[str(x) for x in mongo_entry["shoppingListIds"]],
+                        favorite_store_ids=[str(x) for x in mongo_entry["favoriteStoreIds"]]
+                        )
+            login_user(user)
+            return jsonify({'message': 'User logged in', 'user details': user.flutter_response()}), 200
+        
+    except Exception as e:
+        return f"An error occurred: {e}"
+
+@flutter_bp.route('/logout', methods=['POST'])
+@login_required
+@swag_from('../swagger/logout.yml')
+def logout():
+    '''Logout user'''
+    print(request)
+    logout_user()
+    return jsonify({"message": "Logout successful"})
