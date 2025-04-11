@@ -70,11 +70,10 @@ def load_user(username):
     collection = mongoClient.get_collection(collection="users")
     query = {"username": username}
     mongo_entry = collection.find_one(query)
-    return User(username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
+    return User(id=str(mongo_entry["_id"]), username=mongo_entry["username"], password=mongo_entry["password"], receipt_ids=mongo_entry["receiptIds"], shopping_list_ids=mongo_entry["shoppingListIds"], favorite_store_ids=mongo_entry["favoriteStoreIds"])
 
 # Register blueprints
 app.register_blueprint(mongo_bp, url_prefix='/mongo')
-app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(flutter_bp, url_prefix='/flutter')
 
 if __name__ == "__main__":
