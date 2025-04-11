@@ -4,6 +4,8 @@ from bson import ObjectId
 from bson.json_util import loads, dumps
 from flask import Blueprint, request, jsonify
 import io
+from Dashboard.Dashboard import Dashboard
+from Dashboard.DashboardManager import DashboardManager
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flasgger import Swagger, swag_from
@@ -12,6 +14,7 @@ from Grocery.ScannedReceipt import ScannedReceipt
 from Grocery.ScannedLineItem import ScannedLineItem
 from NameProcessing.NameProcessor import NameProcessor
 from mongoClient.mongo_client import MongoConnector
+from flask_login import current_user
 from FlutterService.ClientErrorMessage import ClientErrorMessage
 
 
@@ -152,6 +155,32 @@ def post_receipt():
     
         logging.debug(f"Data from mongo: {receipt_id}")
         
+        # update data for dashboard analytics if user is logged in
+        if current_user.is_authenticated:
+            # get dashboard data from database with user_id
+            collection = mongoClient.get_collection(db="dashboarddb", collection="user_dashboard")
+            dashboard_data = collection.find_one({"_userId": current_user.get_id()})
+
+            # create Dashboard object
+            if dashboard_data:
+                dashboard = Dashboard(**dashboard_data)
+            else:
+                dashboard = Dashboard(current_user.get_id())  # create an empty Dashboard if none exists
+
+            # update dashboard data
+            dashboard_manager = DashboardManager()
+            dashboard_manager.update_dashboard(dashboard, scanned_receipt)
+
+            # update dashboard in the database
+            collection.update_one(
+                {"_userId": dashboard._user_id},
+                {"$set": dashboard.get_mongo_entry()},
+                upsert=True
+            )
+            
+            logging.debug("Dashboard updated successfully.")
+
+
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logging.error(f"Error posting receipt to MongoDB: {e}")
@@ -342,6 +371,19 @@ def post_store_products(scanned_receipt):
         else:
             # insert the product, set the id
             scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
+
+@flutter_bp.route('/get_dashboard_data/<user_id>', methods=["GET"])
+def get_dashboard_data(user_id):
+    try:
+        collection = mongoClient.get_collection(db="dashboarddb", collection="dashboard")
+        user_dashboard_data = collection.find_one({"_userId": user_id}, {'_id': 0}) # each user has one dashboard
+        if user_dashboard_data:
+            return jsonify(user_dashboard_data), 200
+        else:
+            # user has not uploaded any receipts yet
+            return jsonify({"message": "No dashboard data available yet."}), 200
+    except Exception as e:
+        return f"An error occurred: {e}", 400
 
 @flutter_bp.route('/signup', methods=['POST'])
 @swag_from('../swagger/signup.yml')
