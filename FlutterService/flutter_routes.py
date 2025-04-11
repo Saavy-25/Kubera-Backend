@@ -372,11 +372,12 @@ def post_store_products(scanned_receipt):
             # insert the product, set the id
             scanned_line_item.id = collection.insert_one(scanned_line_item.first_mongo_entry()).inserted_id
 
-@flutter_bp.route('/get_dashboard_data/<user_id>', methods=["GET"])
-def get_dashboard_data(user_id):
+@flutter_bp.route('/get_dashboard_data', methods=["GET"])
+@login_required
+def get_dashboard_data():
     try:
         collection = mongoClient.get_collection(db="dashboarddb", collection="dashboard")
-        user_dashboard_data = collection.find_one({"_userId": user_id}, {'_id': 0}) # each user has one dashboard
+        user_dashboard_data = collection.find_one({"_userId": current_user.user_id}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
             return jsonify(user_dashboard_data), 200
         else:
