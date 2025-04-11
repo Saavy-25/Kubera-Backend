@@ -6,3 +6,4 @@
 .decode_prompt_cache.json
 .decode_cache.json
 .map_cache.json
+vector_cache.npy
