@@ -161,17 +161,6 @@ def search_generic():
                     "compound": {
                         "should": [
                             {
-                                "autocomplete": {
-                                    "query": query,
-                                    "path": "genericName",
-                                    "tokenOrder": "any",
-                                    "fuzzy": {
-                                        "maxEdits": 1,
-                                        "maxExpansions": 100
-                                    },
-                                }
-                            },
-                            {
                                 "text": {
                                     "query": query,
                                     "path": "genericName",
