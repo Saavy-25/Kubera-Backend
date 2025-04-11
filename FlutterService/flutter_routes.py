@@ -364,10 +364,12 @@ def get_dashboard_data(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
-@flutter_bp.route('/get_user_lists/<user_id>', methods=["GET"])
-def get_user_lists(user_id):
+@flutter_bp.route('/get_user_lists', methods=["GET"])
+def get_user_lists():
     try:
-        # Gets list ids from user, gets matching lists from shoppingLists, returns (id, name) pairs
+        user_id = request.cookies.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Missing user_id cookie"}), 400
 
         users_collection = mongoClient.get_collection(db="dev",collection="users")
         user_list_ids = users_collection.find_one({'_id': ObjectId(user_id)},  {"shoppingListIds": 1})
@@ -516,12 +518,13 @@ def remove_item_from_list():
 @flutter_bp.route('/create_list', methods=["POST"])
 def create_list():
     try:
-        data = request.json
-        user_id = data.get("userId")
-        list_name = data.get("listName", "Untitled List") # If no list name is provided, make it untitled
 
+        user_id = request.cookies.get("user_id")
         if not user_id:
-            return jsonify({"error": "userId is required"}), 400
+            return jsonify({"error": "Missing user_id cookie"}), 400
+        
+        data = request.json
+        list_name = data.get("listName", "Untitled List") # If no list name is provided, make it untitled
 
         shopping_list_collection = mongoClient.get_collection(db="dev",collection="shoppingLists")
         users_collection = mongoClient.get_collection(db="dev",collection="users")
@@ -549,12 +552,16 @@ def create_list():
 @flutter_bp.route('/delete_list', methods=["POST"])
 def delete_list():
     try:
+
+        user_id = request.cookies.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Missing user_id cookie"}), 400
+        
         data = request.json
-        user_id = data.get("userId")
         list_id = data.get("listId")
 
         if not user_id or not list_id:
-            return jsonify({"error": "userId and listId are required"}), 400
+            return jsonify({"error": "listId is required"}), 400
 
         shopping_list_collection = mongoClient.get_collection(db="dev", collection="shoppingLists")
         users_collection = mongoClient.get_collection(db="dev", collection="users")
