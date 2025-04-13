@@ -485,9 +485,9 @@ def get_dashboard_data():
 @flutter_bp.route('/get_user_lists', methods=["GET"])
 def get_user_lists():
     try:
-        user_id = request.cookies.get("user_id")
+        user_id = current_user.id 
         if not user_id:
-            return jsonify({"error": "Missing user_id cookie"}), 400
+            return jsonify({"error": "Missing user_id"}), 400
 
         users_collection = mongoClient.get_collection(collection="users")
         user_list_ids = users_collection.find_one({'_id': ObjectId(user_id)},  {"shoppingListIds": 1})
@@ -530,7 +530,7 @@ def get_list_data(list_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
-@flutter_bp.route('/add_item_to_list', methods=["POST"])
+@flutter_bp.route('/add_item_to_list', methods=["PUT"])
 def add_item_to_list():
     try:      
         data = request.json
@@ -636,8 +636,7 @@ def remove_item_from_list():
 @flutter_bp.route('/create_list', methods=["POST"])
 def create_list():
     try:
-
-        user_id = request.cookies.get("user_id")
+        user_id = current_user._get_current_object().id
         if not user_id:
             return jsonify({"error": "Missing user_id cookie"}), 400
         
@@ -658,7 +657,8 @@ def create_list():
 
         # Update users shoppingListIds
         users_collection.update_one(
-            {"_id": ObjectId(user_id)},
+            # {"_id": ObjectId(user_id)},
+            {"username": user_id},
             {"$push": {"shoppingListIds": list_id}}
         )
 
