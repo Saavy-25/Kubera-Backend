@@ -17,7 +17,7 @@ class NameProcessor:
         self.__load_cache() # load cache on startup only once
     
     def processNames(self, product_name_list): 
-        print(product_name_list)
+        print(f'Product name list: {product_name_list}')
         index_list, cached_list, product_name_list = self.__check_cached_names(product_name_list)
         
         name_list = []

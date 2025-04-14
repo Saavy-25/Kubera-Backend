@@ -12,14 +12,14 @@ class ScannedLineItem:
         self.generic_matches = generic_matches
         self.id = None #_id in mongo
         self.line_item = line_item
-        self.price_per_count = str(round(float(self.total_price)/ self.count, 2))
+        self.price_per_count = round(float(self.total_price)/ self.count, 2)
         self.store_name = store_name
         self.store_product_name = store_product_name # expanded name
 
     def mongo_receipt_entry(self) -> dict:
         '''return object as a dictionary for use in mongo receipts collection'''
         return {
-            "pricePerCount": self.price_per_count,
+            "pricePerCount": str(self.price_per_count),
             "storeProductId": self.id,
             "count": self.count
         }
@@ -32,7 +32,7 @@ class ScannedLineItem:
             "genericId": self.generic_id,
             "recentPrices": [
                 {
-                    "price": self.price_per_count,
+                    "price": str(self.price_per_count),
                     "reportCount": 1,
                     "lastReportDate": self.date
                 }
