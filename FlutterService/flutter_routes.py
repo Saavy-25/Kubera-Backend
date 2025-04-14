@@ -510,7 +510,7 @@ def get_user_lists():
             "id": str(item["_id"]),
             "listName": item.get("listName", ""),
             "items": item.get("items", []),
-            "date": item.get("date", "")
+            "date": item.get("date", "").strftime('%Y-%m-%d') if item.get("date") else ""
             }
             for item in shopping_lists
         ]
@@ -528,6 +528,8 @@ def get_list_data(list_id):
         shopping_list = shopping_list_collection.find_one(
             {"_id": ObjectId(list_id)}
         )
+        if shopping_list and "date" in shopping_list and isinstance(shopping_list["date"], datetime):
+            shopping_list["date"] = shopping_list["date"].strftime('%Y-%m-%d')
 
         if not shopping_list:
             return jsonify({"message": "Shopping list not found"}), 404
