@@ -488,12 +488,12 @@ def get_dashboard_data():
 @flutter_bp.route('/get_user_lists', methods=["GET"])
 def get_user_lists():
     try:
-        user_id = current_user.username
-        if not user_id:
-            return jsonify({"error": "Missing user_id"}), 400
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
 
         users_collection = mongoClient.get_collection(collection="users")
-        user_list_ids = users_collection.find_one({"username": current_user.username},  {"shoppingListIds": 1})
+        user_list_ids = users_collection.find_one({"username": username},  {"shoppingListIds": 1})
         shoppingLists_collection = mongoClient.get_collection(collection="shoppingLists")
 
         if not user_list_ids or "shoppingListIds" not in user_list_ids:
@@ -502,12 +502,16 @@ def get_user_lists():
         shopping_list_ids = [ObjectId(id) for id in user_list_ids["shoppingListIds"]]
 
         shopping_lists = shoppingLists_collection.find(
-            {"_id": {"$in": shopping_list_ids}},
-            {"listName": 1}
+            {"_id": {"$in": shopping_list_ids}}
         )
 
         shopping_lists_data = [
-            {"id": str(item["_id"]), "name": item.get("listName", "")}
+            {
+            "id": str(item["_id"]),
+            "listName": item.get("listName", ""),
+            "items": item.get("items", []),
+            "date": item.get("date", "")
+            }
             for item in shopping_lists
         ]
 
@@ -529,7 +533,7 @@ def get_list_data(list_id):
             return jsonify({"message": "Shopping list not found"}), 404
 
         return Response(dumps(shopping_list), mimetype='application/json'), 200
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
@@ -566,8 +570,8 @@ def add_item_to_list():
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
-@flutter_bp.route('/check_uncheck_list_item', methods=["POST"])
-def check_list_item():
+@flutter_bp.route('/toggle_list_item', methods=["PUT"])
+def toggle_list_item():
     try:      
         data = request.json
         list_id = data.get("listId")
@@ -611,7 +615,7 @@ def check_list_item():
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
     
-@flutter_bp.route('/remove_item_from_list', methods=["POST"])
+@flutter_bp.route('/remove_item_from_list', methods=["PUT"])
 def remove_item_from_list():
     try:
         data = request.json
@@ -663,7 +667,6 @@ def create_list():
 
         # Update users shoppingListIds
         users_collection.update_one(
-            # {"_id": ObjectId(user_id)},
             {"username": username},
             {"$push": {"shoppingListIds": list_id}}
         )
@@ -673,18 +676,18 @@ def create_list():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@flutter_bp.route('/delete_list', methods=["POST"])
+@flutter_bp.route('/delete_list', methods=["DELETE"])
 def delete_list():
     try:
 
-        user_id = request.cookies.get("user_id")
-        if not user_id:
-            return jsonify({"error": "Missing user_id cookie"}), 400
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
         
         data = request.json
         list_id = data.get("listId")
 
-        if not user_id or not list_id:
+        if not username or not list_id:
             return jsonify({"error": "listId is required"}), 400
 
         shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
@@ -695,7 +698,7 @@ def delete_list():
 
         # Remove from users shoppingListIds
         users_collection.update_one(
-            {"_id": ObjectId(user_id)},
+            {"username": username},
             {"$pull": {"shoppingListIds": ObjectId(list_id)}}
         )
 
