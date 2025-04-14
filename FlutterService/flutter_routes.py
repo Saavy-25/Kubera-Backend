@@ -82,7 +82,17 @@ def map_receipt():
 
         collection = mongoClient.get_collection(collection="genericItems")
 
-        #go through each generic item from api call
+        # confirm all generic items in the database have an embedding
+        # if no embedding, one is generated and added to the database
+        for doc in collection.find({"vectorEmbedding": ""}):
+            name = doc["genericName"]
+            embedding = embedding_vector_manager.getEmbedding(name)
+            collection.update_one(
+                {"_id": doc["_id"]},
+                {"$set": {"vectorEmbedding": embedding}}
+            )
+
+        # go through each generic item from api call
         for i, name in enumerate(generic_names):
             embedding = embedding_vector_manager.getEmbedding(name)
             agg_pipeline = [
