@@ -534,6 +534,7 @@ def get_list_data(list_id):
         if not shopping_list:
             return jsonify({"message": "Shopping list not found"}), 404
 
+        shopping_list["id"] = str(shopping_list["_id"])
         return Response(dumps(shopping_list), mimetype='application/json'), 200
 
     except Exception as e:
