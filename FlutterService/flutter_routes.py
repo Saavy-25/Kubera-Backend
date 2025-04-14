@@ -249,11 +249,6 @@ def search_generic():
                     "score": {"$meta": "searchScore"},
                     "highlights": { "$meta": "searchHighlights" }
                 }
-            },
-            {
-                "$sort": {
-                    "score": -1
-                }
             }
         ]
 
