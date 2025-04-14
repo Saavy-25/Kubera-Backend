@@ -18,7 +18,7 @@ from NameProcessing.EmbeddingVectorManager import EmbeddingVectorManager
 from mongoClient.mongo_client import MongoConnector
 from flask_login import current_user
 from FlutterService.ClientErrorMessage import ClientErrorMessage
-from datetime import datetime
+from datetime import datetime, timezone
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -485,12 +485,12 @@ def get_dashboard_data():
 @flutter_bp.route('/get_user_lists', methods=["GET"])
 def get_user_lists():
     try:
-        user_id = current_user.id 
+        user_id = current_user.username
         if not user_id:
             return jsonify({"error": "Missing user_id"}), 400
 
         users_collection = mongoClient.get_collection(collection="users")
-        user_list_ids = users_collection.find_one({'_id': ObjectId(user_id)},  {"shoppingListIds": 1})
+        user_list_ids = users_collection.find_one({"username": current_user.username},  {"shoppingListIds": 1})
         shoppingLists_collection = mongoClient.get_collection(collection="shoppingLists")
 
         if not user_list_ids or "shoppingListIds" not in user_list_ids:
@@ -636,11 +636,14 @@ def remove_item_from_list():
 @flutter_bp.route('/create_list', methods=["POST"])
 def create_list():
     try:
-        user_id = current_user._get_current_object().id
-        if not user_id:
-            return jsonify({"error": "Missing user_id cookie"}), 400
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing request data"}), 400
         
-        data = request.json
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
+        
         list_name = data.get("listName", "Untitled List") # If no list name is provided, make it untitled
 
         shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
@@ -658,11 +661,11 @@ def create_list():
         # Update users shoppingListIds
         users_collection.update_one(
             # {"_id": ObjectId(user_id)},
-            {"username": user_id},
+            {"username": username},
             {"$push": {"shoppingListIds": list_id}}
         )
 
-        return jsonify({"message": "List created", "listId": str(list_id)}), 201
+        return jsonify({"message": "List created", "listId": str(list_id)}), 200
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
