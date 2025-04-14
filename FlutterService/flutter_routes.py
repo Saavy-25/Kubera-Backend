@@ -3,7 +3,7 @@ import logging
 from PIL import Image
 from bson import ObjectId
 from bson.json_util import loads, dumps
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, Response
 import io
 from Dashboard.Dashboard import Dashboard
 from Dashboard.DashboardManager import DashboardManager
@@ -18,7 +18,7 @@ from NameProcessing.EmbeddingVectorManager import EmbeddingVectorManager
 from mongoClient.mongo_client import MongoConnector
 from flask_login import current_user
 from FlutterService.ClientErrorMessage import ClientErrorMessage
-from datetime import datetime
+from datetime import datetime, timezone
 
 from AzureDIConnection.DIConnection import analyze_receipt
 # from mongoClient.mongo_routes import add_receipt_data
@@ -280,8 +280,12 @@ def search_generic():
 def get_storeProducts(generic_id):
     try:
         collection = mongoClient.get_collection(collection="storeProducts")
-        cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
-        results = list(cur)
+        cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 1, 'genericId': 0}) # Excluding _id field from documents returned
+        results = [
+            {**item, "id": str(item.pop("_id"))} for item in cur
+        ] # cast id to string and remove underscore from key
+        for item in results: # remove all the objectIds
+            item.pop("_id", None)
 
         print(f"db query: {results}")
         return jsonify(results), 200
@@ -497,10 +501,237 @@ def get_dashboard_data():
         collection = mongoClient.get_collection(collection="dashboards")
         user_dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
-            return jsonify(user_dashboard_data), 200
+            dashboard = Dashboard(**user_dashboard_data)
+            return jsonify(dashboard.flutter_response()), 200
         else:
             # user has not uploaded any receipts yet
             return jsonify({"message": "No dashboard data available yet."}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/get_user_lists', methods=["GET"])
+def get_user_lists():
+    try:
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
+
+        users_collection = mongoClient.get_collection(collection="users")
+        user_list_ids = users_collection.find_one({"username": username},  {"shoppingListIds": 1})
+        shoppingLists_collection = mongoClient.get_collection(collection="shoppingLists")
+
+        if not user_list_ids or "shoppingListIds" not in user_list_ids:
+            return jsonify({"message": "No user with this id could be found."}), 200
+
+        shopping_list_ids = [ObjectId(id) for id in user_list_ids["shoppingListIds"]]
+
+        shopping_lists = shoppingLists_collection.find(
+            {"_id": {"$in": shopping_list_ids}}
+        )
+
+        shopping_lists_data = [
+            {
+            "id": str(item["_id"]),
+            "listName": item.get("listName", ""),
+            "items": item.get("items", []),
+            "date": item.get("date", "").strftime('%Y-%m-%d') if item.get("date") else ""
+            }
+            for item in shopping_lists
+        ]
+
+        return jsonify(shopping_lists_data), 200
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/get_list_data/<list_id>', methods=["GET"])
+def get_list_data(list_id):
+    try:      
+        shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
+
+        shopping_list = shopping_list_collection.find_one(
+            {"_id": ObjectId(list_id)}
+        )
+        if shopping_list and "date" in shopping_list and isinstance(shopping_list["date"], datetime):
+            shopping_list["date"] = shopping_list["date"].strftime('%Y-%m-%d')
+
+        if not shopping_list:
+            return jsonify({"message": "Shopping list not found"}), 404
+
+        shopping_list["id"] = str(shopping_list["_id"])
+        return Response(dumps(shopping_list), mimetype='application/json'), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/add_item_to_list', methods=["PUT"])
+def add_item_to_list():
+    try:      
+        data = request.get_json()
+        list_id = data.get('listId')
+        store_product_id = data.get('storeProductId')
+        product_name = data.get('productName')
+
+        # Required fields check
+        if not list_id or not store_product_id or not product_name:
+            return jsonify({"error": "Missing required fields"}), 400
+
+        shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
+
+        new_item = {
+            "productName": product_name,
+            "storeProductId": store_product_id,
+            "retrieved": False
+        }
+
+        result = shopping_list_collection.update_one(
+            {"_id": ObjectId(list_id)},
+            {"$push": {"items": new_item}}
+        )
+
+        if result.matched_count == 0:
+            return jsonify({"error": "Shopping list not found"}), 404
+
+        return jsonify({"message": "Item added successfully"}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/toggle_list_item', methods=["PUT"])
+def toggle_list_item():
+    try:      
+        data = request.get_json()
+        list_id = data.get("listId")
+        store_product_id = data.get("storeProductId")
+
+        if not list_id or not store_product_id:
+            return jsonify({"error": "listId and storeProductId are required"}), 400
+
+        shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
+
+        # First, find the current state of the item
+        shopping_list = shopping_list_collection.find_one(
+            {"_id": ObjectId(list_id), "items.storeProductId": store_product_id},
+            {"items.$": 1}
+        )
+
+        if not shopping_list or "items" not in shopping_list or not shopping_list["items"]:
+            return jsonify({"error": "Item not found in the list"}), 404
+
+        current_retrieved = shopping_list["items"][0].get("retrieved", False)
+        new_value = not current_retrieved
+
+        # Update val to opposite
+        result = shopping_list_collection.update_one(
+            {
+                "_id": ObjectId(list_id),
+                "items.storeProductId": store_product_id
+            },
+            {
+                "$set": {
+                    "items.$.retrieved": new_value
+                }
+            }
+        )
+
+        if result.matched_count == 0:
+            return jsonify({"error": "Item not found in the list"}), 404
+
+        return jsonify({"message": "Item marked as retrieved"}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/remove_item_from_list', methods=["PUT"])
+def remove_item_from_list():
+    try:
+        data = request.get_json()
+        list_id = data.get("listId")
+        store_product_id = data.get("storeProductId")
+
+        if not list_id or not store_product_id:
+            return jsonify({"error": "listId and storeProductId are required"}), 400
+
+        shopping_list_collection = mongoClient.get_collection("shoppingLists")
+
+        result = shopping_list_collection.update_one(
+            {"_id": ObjectId(list_id)},
+            {"$pull": {"items": {"storeProductId": store_product_id}}}
+        )
+
+        if result.modified_count == 0:
+            return jsonify({"error": "Item not found or already removed"}), 404
+
+        return jsonify({"message": "Item removed from list"}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500 
+    
+@flutter_bp.route('/create_list', methods=["POST"])
+def create_list():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing request data"}), 400
+        
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
+        
+        list_name = data.get("listName", "Untitled List") # If no list name is provided, make it untitled
+
+        shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
+        users_collection = mongoClient.get_collection(collection="users")
+
+        # Create the list
+        new_list = {
+            "listName": list_name,
+            "items": [],
+            "date": datetime.now(timezone.utc)
+        }
+        list_insert_result = shopping_list_collection.insert_one(new_list)
+        list_id = list_insert_result.inserted_id
+
+        # Update users shoppingListIds
+        users_collection.update_one(
+            {"username": username},
+            {"$push": {"shoppingListIds": list_id}}
+        )
+
+        return jsonify({"message": "List created", "listId": str(list_id)}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@flutter_bp.route('/delete_list', methods=["DELETE"])
+def delete_list():
+    try:
+
+        username = current_user.username
+        if not username:
+            return jsonify({"error": "Missing user cookie"}), 400
+        
+        data = request.json
+        list_id = data.get("listId")
+
+        if not username or not list_id:
+            return jsonify({"error": "listId is required"}), 400
+
+        shopping_list_collection = mongoClient.get_collection(collection="shoppingLists")
+        users_collection = mongoClient.get_collection(collection="users")
+
+        # Delete the list
+        shopping_list_collection.delete_one({"_id": ObjectId(list_id)})
+
+        # Remove from users shoppingListIds
+        users_collection.update_one(
+            {"username": username},
+            {"$pull": {"shoppingListIds": ObjectId(list_id)}}
+        )
+
+        return jsonify({"message": "List deleted"}), 200
+
     except Exception as e:
         return f"An error occurred: {e}", 400
 

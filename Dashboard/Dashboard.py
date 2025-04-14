@@ -14,6 +14,14 @@ class Dashboard:
 
     def flutter_response(self):
         """convert model to map for use in frontend response."""
+        # favorite_response = {}
+        # for item in self.favorite_items:
+        #     item['name'] = str(item['name'])
+        
+        # expensive_response = {}
+        # for key, value in self.most_expensive_item.items():
+        #     expensive_response[str(key)] = value
+
         return {
             "username": self.username,
             "weeklySpending": self.weekly_spending,
