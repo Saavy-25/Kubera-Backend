@@ -220,17 +220,31 @@ def search_generic():
                     "compound": {
                         "should": [
                             {
+                                "autocomplete": {
+                                    "query": query,
+                                    "path": "genericName",
+                                    "tokenOrder": "any",
+                                    "fuzzy": {
+                                        "maxEdits": 1,
+                                        "maxExpansions": 20
+                                    },
+                                }
+                            },
+                            {
                                 "text": {
                                     "query": query,
                                     "path": "genericName",
                                     "fuzzy": {
                                         "maxEdits": 1,
-                                        "maxExpansions": 100
+                                        "maxExpansions": 20
                                     }
                                 }
                             }
                         ],
                         "minimumShouldMatch": 1
+                    },
+                    "highlight": {
+                        "path": "genericName"
                     }
                 }
             },
@@ -243,11 +257,7 @@ def search_generic():
                     "genericName": 1,
                     "_id": 1,
                     "score": {"$meta": "searchScore"},
-                }
-            },
-            {
-                "$sort": {
-                    "score": -1
+                    "highlights": { "$meta": "searchHighlights" }
                 }
             }
         ]
