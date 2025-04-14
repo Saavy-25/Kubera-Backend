@@ -69,27 +69,27 @@ class DashboardManager:
         self.__update_item_frequency(dashboard, scanned_receipt)
 
         # find the most frequent item
-        most_frequent_id = max(
+        most_frequent_name = max(
             dashboard.current_month_item_frequency,
             key=dashboard.current_month_item_frequency.get
         )
-        frequency = dashboard.current_month_item_frequency[most_frequent_id]
+        frequency = dashboard.current_month_item_frequency[most_frequent_name]
 
         for favorite in dashboard.favorite_items:
             if favorite["date"] == current_month: # find current month
                 # just update frequency if same item
-                if favorite["name"] == str(most_frequent_id):
+                if favorite["name"] == str(most_frequent_name):
                     favorite["frequency"] = frequency
                 else:
                     # update the genericId and frequency
-                    favorite["name"] = str(most_frequent_id)
+                    favorite["name"] = str(most_frequent_name)
                     favorite["frequency"] = frequency
                 return
 
         # if no favorite exists for current month, add it
         dashboard.favorite_items.insert(0, {
             "date": current_month,
-            "name": str(most_frequent_id),
+            "name": str(most_frequent_name),
             "frequency": frequency
     })
 
