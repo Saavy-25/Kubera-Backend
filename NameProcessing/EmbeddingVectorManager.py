@@ -43,7 +43,7 @@ class EmbeddingVectorManager:
 
 def main():
     my_manager = EmbeddingVectorManager(cache_path="NameProcessing/vector_cache")
-    embedding = my_manager.getEmbedding("Mayonaisse")
+    embedding = my_manager.getEmbedding("Mayonnaise")
     embedding2 = my_manager.getEmbedding("Green Apples")
     print(f"Embedding vector Mayo: {embedding}")
     print(f"Embedding vector Apple: {embedding2}")
