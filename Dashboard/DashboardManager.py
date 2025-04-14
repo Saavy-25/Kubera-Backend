@@ -78,27 +78,26 @@ class DashboardManager:
         for favorite in dashboard.favorite_items:
             if favorite["date"] == current_month: # find current month
                 # just update frequency if same item
-                if favorite["name"] == most_frequent_id:
+                if favorite["name"] == str(most_frequent_id):
                     favorite["frequency"] = frequency
                 else:
                     # update the genericId and frequency
-                    favorite["name"] = most_frequent_id
+                    favorite["name"] = str(most_frequent_id)
                     favorite["frequency"] = frequency
                 return
 
         # if no favorite exists for current month, add it
         dashboard.favorite_items.insert(0, {
             "date": current_month,
-            "name": most_frequent_id,
+            "name": str(most_frequent_id),
             "frequency": frequency
     })
 
     def __update_item_frequency(self, dashboard, scanned_receipt):
         for item in scanned_receipt.scanned_line_items:           
-            if item.generic_id:
-                dashboard.current_month_item_frequency[item.generic_id] = (
-                    dashboard.current_month_item_frequency.get(item.generic_id, 0) + 1
-                )
+            dashboard.current_month_item_frequency[item.generic_matches[0]] = (
+                dashboard.current_month_item_frequency.get(item.generic_matches[0], 0) + 1
+            )
 
     def __update_most_expensive_item(self, dashboard, scanned_receipt):
         # only update if the receipt is from the current month
@@ -119,7 +118,7 @@ class DashboardManager:
             # update most expensive item if a more expensive item is found
             if item.price_per_count is not None and item.price_per_count > most_expensive_item["price"]:
                 most_expensive_item = {
-                    "name": item.generic_id,
+                    "name": item.generic_matches[0],
                     "price": item.price_per_count,
                     "date": receipt_month
                 }

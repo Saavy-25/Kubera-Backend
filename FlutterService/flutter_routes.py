@@ -474,7 +474,8 @@ def get_dashboard_data():
         collection = mongoClient.get_collection(collection="dashboards")
         user_dashboard_data = collection.find_one({"username": current_user.username}, {'_id': 0}) # each user has one dashboard
         if user_dashboard_data:
-            return jsonify(user_dashboard_data), 200
+            dashboard = Dashboard(**user_dashboard_data)
+            return jsonify(dashboard.flutter_response()), 200
         else:
             # user has not uploaded any receipts yet
             return jsonify({"message": "No dashboard data available yet."}), 200
