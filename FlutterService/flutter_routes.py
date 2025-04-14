@@ -540,7 +540,7 @@ def get_list_data(list_id):
 @flutter_bp.route('/add_item_to_list', methods=["PUT"])
 def add_item_to_list():
     try:      
-        data = request.json
+        data = request.get_json()
         list_id = data.get('listId')
         store_product_id = data.get('storeProductId')
         product_name = data.get('productName')
@@ -573,7 +573,7 @@ def add_item_to_list():
 @flutter_bp.route('/toggle_list_item', methods=["PUT"])
 def toggle_list_item():
     try:      
-        data = request.json
+        data = request.get_json()
         list_id = data.get("listId")
         store_product_id = data.get("storeProductId")
 
@@ -618,7 +618,7 @@ def toggle_list_item():
 @flutter_bp.route('/remove_item_from_list', methods=["PUT"])
 def remove_item_from_list():
     try:
-        data = request.json
+        data = request.get_json()
         list_id = data.get("listId")
         store_product_id = data.get("storeProductId")
 
