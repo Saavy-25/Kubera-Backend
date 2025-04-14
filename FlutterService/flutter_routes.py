@@ -260,8 +260,12 @@ def search_generic():
 def get_storeProducts(generic_id):
     try:
         collection = mongoClient.get_collection(collection="storeProducts")
-        cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 0, 'genericId': 0}) # Excluding _id field from documents returned
-        results = list(cur)
+        cur = collection.find({"genericId": ObjectId(generic_id)}, {'_id': 1, 'genericId': 0}) # Excluding _id field from documents returned
+        results = [
+            {**item, "id": str(item.pop("_id"))} for item in cur
+        ] # cast id to string and remove underscore from key
+        for item in results: # remove all the objectIds
+            item.pop("_id", None)
 
         print(f"db query: {results}")
         return jsonify(results), 200
