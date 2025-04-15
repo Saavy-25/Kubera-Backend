@@ -148,6 +148,13 @@ def post_receipt():
        
         # make sure that all store products (and associated generic items) exist in the storeProducts table before posting the full receipt
         post_store_products(scanned_receipt)
+
+        # update total receipt price
+        total_receipt_price = 0
+        for scanned_line_item in scanned_receipt.scanned_line_items:
+            total_receipt_price += scanned_line_item.price_per_count
+        
+        scanned_receipt.total_receipt_price = total_receipt_price
         
         # now add the receipt to the receipt db
         # Access the database and collection
