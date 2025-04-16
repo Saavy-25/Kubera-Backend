@@ -131,6 +131,10 @@ def map_receipt():
         logging.debug(f"Processed receipt: {scanned_receipt.flutter_response()}")
         return jsonify({'message': 'File successfully uploaded', 'receipt': scanned_receipt.flutter_response()}), 200
        
+    except ValueError as e:
+        logging.error(f"Missing information from receipt")
+        e = ClientErrorMessage(message="Please fill in missing receipt fields.", detail="Required receipt field missing or blank")
+        return jsonify(e.flutter_response()), 400
     except Exception as e:
         return jsonify({'error': str(e)}), 500 
 
