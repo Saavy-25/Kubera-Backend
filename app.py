@@ -41,9 +41,15 @@ logging.getLogger("pymongo").setLevel(logging.ERROR) # Suppress pymongo logging
 
 # If running on Azure App Service, dynamically set prod/dev
 ENV = "prod"
-AZURE_DEPLOYMENT = 'WEBSITE_HOSTNAME' in os.environ
 
-if AZURE_DEPLOYMENT:
+def get_environment():
+    '''get the Azure resource key'''
+    load_dotenv()
+    return os.getenv("ENVIRONMENT")
+
+ENVIRONEMNT = get_environment()
+
+if ENVIRONEMNT == "prod":
     app.config['ENV'] = 'production'
     app.config['DEBUG'] = False
 else:
