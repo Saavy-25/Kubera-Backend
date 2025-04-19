@@ -22,8 +22,4 @@ View Swagger Doccumentation for API during local dev by running app.py and visit
 
 Currently deployed code is on prod branch. 
 
-Backend is currently deployed on Azure App Service. When running, the following endpoints can be accessed:
-
-application: https://kubera-avbyczbee5fybnht.eastus2-01.azurewebsites.net/
-
-doccumentation: https://kubera-avbyczbee5fybnht.eastus2-01.azurewebsites.net/apidocs/
+Backend is currently deployed on Azure App Service.
