@@ -6,7 +6,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Grocery.ScannedLineItem import ScannedLineItem
 
-def test_product_creation():
+def test_line_item_creation():
     '''test minimum constructor argumenbts'''
     p = ScannedLineItem("BUTTER CHICKEN W/BASMATI", 2, 8.98)
     
