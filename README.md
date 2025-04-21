@@ -14,12 +14,12 @@ If importing any new packages when developing, please make sure to update the re
 
 View Swagger Doccumentation for API during local dev by running app.py and visiting http://127.0.0.1:5000/apidocs/
 
+## Models and JSON standards
+
+![model and json standards for development](Grocery/BackendUML.jpg)
+
 ## Deployment
 
 Currently deployed code is on prod branch. 
 
-Backend is currently deployed on Azure App Service. When running, the following endpoints can be accessed:
-
-application: https://kubera-avbyczbee5fybnht.eastus2-01.azurewebsites.net/
-
-doccumentation: https://kubera-avbyczbee5fybnht.eastus2-01.azurewebsites.net/apidocs/
+Backend is currently deployed on Azure App Service.

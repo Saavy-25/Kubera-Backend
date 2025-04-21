@@ -6,8 +6,8 @@ import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import app
-from Grocery.StoreProduct import StoreProduct
-from Grocery.Receipt import Receipt
+from Grocery.ScannedLineItem import ScannedLineItem
+from Grocery.ScannedReceipt import ScannedReceipt
 from FlutterService.flutter_routes import post_generic_items, post_store_products
 
 @pytest.fixture
@@ -39,10 +39,11 @@ def client():
 
 
 def test_post_receipt(client):
-    product = StoreProduct(line_item="SPR STRAWB JAM", count=2, total_price=10.0, store_product_name="Spring Strawberry Jam", generic_matches=["Strawbery Jam"])
-    receipt = Receipt(store_name="TRADER JOE'S", store_address={'houseNumber': '3724', 'road': 'SW Archer Road', 'postalCode': '32608', 'city': 'Gainesville', 'state': 'FL', 'streetAddress': '3724 SW Archer Road'}, total_receipt_price=57.12, date="2025-02-25", products=[product])
+    product = ScannedLineItem(line_item="SPR STRAWB JAM", count=2, total_price=10.0, store_product_name="Spring Strawberry Jam", generic_matches=["Strawbery Jam"])
+    receipt = ScannedReceipt(store_name="TRADER JOE'S", store_address={'houseNumber': '3724', 'road': 'SW Archer Road', 'postalCode': '32608', 'city': 'Gainesville', 'state': 'FL', 'streetAddress': '3724 SW Archer Road'}, total_receipt_price=57.12, date="2025-02-25", scanned_line_items=[product])
+    
     try:
-        data=json.dumps(receipt.get_map())
+        data = json.dumps(receipt.flutter_response())
     except:
         ValueError, "cannot make json obj"
 

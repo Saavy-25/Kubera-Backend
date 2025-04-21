@@ -4,7 +4,7 @@ import os
 
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from Grocery.Receipt import Receipt
+from Grocery.ScannedReceipt import ScannedReceipt
 from AzureDIConnection.DIConnection import analyze_receipt
 from app import app
 
@@ -21,12 +21,12 @@ def test_process_receipt():
     assert receipt.store_address == '3724 SW Archer Road, Gainesville, FL, 32608'
     assert receipt.date == "2025-02-25"
     assert receipt.total_receipt_price == 57.12
-    assert len(receipt.products) == 14
+    assert len(receipt.scanned_line_items) == 14
 
 def test_count_detection():
     '''test that line items are read in receipt processing'''
     receipt = analyze_receipt("test/test_receipt.jpg")
-    rice = receipt.products[0]
+    rice = receipt.scanned_line_items[0]
     
     assert rice.line_item == "BUTTER CHICKEN W/BASMATI"
     assert rice.count == 2
@@ -47,7 +47,7 @@ def test_process_receipt_route(client):
     assert receipt_map['date'] == "2025-02-25"
     assert receipt_map['totalReceiptPrice'] == 57.12
 
-    rice = receipt_map['products'][0]
+    rice = receipt_map['scannedLineItems'][0]
     
     assert rice['lineItem'] == "BUTTER CHICKEN W/BASMATI"
     assert rice['count'] == 2

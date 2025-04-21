@@ -17,7 +17,7 @@ class NameProcessor:
         self.__load_cache() # load cache on startup only once
     
     def processNames(self, product_name_list): 
-        print(product_name_list)
+        print(f'Product name list: {product_name_list}')
         index_list, cached_list, product_name_list = self.__check_cached_names(product_name_list)
         
         name_list = []
@@ -38,7 +38,7 @@ class NameProcessor:
             json_response = self.__get_response_json(complete_prompt)
             result_list = (json.loads(json_response)["grocery_items"])
             for name in result_list:
-                name_list.append(name)
+                name_list.append(name.title())
 
         if self.DEBUG_PRINT:
             print(f"API response list: {name_list}")
