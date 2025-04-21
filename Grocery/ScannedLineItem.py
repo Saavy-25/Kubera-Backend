@@ -45,7 +45,7 @@ class ScannedLineItem:
             "count": self.count,
             "genericMatches": self.generic_matches,
             "lineItem": self.line_item,
-            "pricePerCount": self.price_per_count,
+            "pricePerCount": str(self.price_per_count),
             "storeProductName": self.store_product_name,
             "totalPrice": self.total_price,
         }
