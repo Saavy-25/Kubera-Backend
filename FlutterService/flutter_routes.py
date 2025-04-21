@@ -153,6 +153,7 @@ def search_generic():
         if not query:
             return jsonify({"error": "Query parameter is required"}), 400
         
+        logging.debug('Query received, starting aggregation pipeline')
         agg_pipeline = [
             {
                 "$search": {
@@ -203,7 +204,7 @@ def search_generic():
         ]
 
         results = list(collection.aggregate(agg_pipeline))
-        print(results)
+        logging.debug(f'Search: {results}')
 
         for doc in results:
             doc["_id"] = str(doc["_id"])
