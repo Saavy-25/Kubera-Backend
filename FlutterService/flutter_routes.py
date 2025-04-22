@@ -397,7 +397,7 @@ def post_store_products(scanned_receipt):
 
                 curr_price = scanned_line_item.price_per_count
                 curr_date = scanned_line_item.date
-                recent_prices = update_recent_prices(curr_price, curr_date, document['recentPrices'])
+                recent_prices = update_recent_prices(str(curr_price), curr_date, document['recentPrices'])
 
                 update_operation = { '$set' : {'recentPrices' : recent_prices}}
                 collection.update_one(query, update_operation)
