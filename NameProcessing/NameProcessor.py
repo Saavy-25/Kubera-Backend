@@ -38,7 +38,7 @@ class NameProcessor:
             json_response = self.__get_response_json(complete_prompt)
             result_list = (json.loads(json_response)["grocery_items"])
             for name in result_list:
-                name_list.append(name)
+                name_list.append(name.title())
 
         if self.DEBUG_PRINT:
             print(f"API response list: {name_list}")
