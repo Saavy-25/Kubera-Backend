@@ -209,6 +209,36 @@ def post_receipt():
         e = ClientErrorMessage(message="We are having trouble saving your recipt, please try again.", detail=str(e))
         return jsonify(e.flutter_response()), 500
 
+@flutter_bp.route('/get_receipts', methods=['GET'])
+@login_required
+def get_receipts():
+    try:
+        if not current_user.username:
+            return jsonify({"error": "Missing user cookie"}), 400
+        
+        user_collection = mongoClient.get_collection(collection="users")
+        cur = user_collection.find_one({"username": current_user.username}, {'_id': 0, 'receiptIds': 1})
+        print(cur)
+        
+        receipts = []
+        receipt_collection = mongoClient.get_collection(collection="receipts")
+        for receipt_id in cur['receiptIds']:
+            receipt = receipt_collection.find_one({"_id": ObjectId(receipt_id)}, {"_id": 0})
+
+            if not receipt:
+                # No client erorr message, just don't return a receipt that's not found
+                logging.error(f"Receipt with ID {receipt_id} not found")
+                continue
+            
+            for lineItem in receipt["scannedLineItems"]:
+                lineItem["storeProductId"] = str(lineItem["storeProductId"]) if "storeProductId" in lineItem else None
+
+            logging.debug(f"Receipt: {receipt}")
+            receipts.append(receipt)
+        
+        return jsonify(receipts), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @flutter_bp.route('/get_data', methods=['GET'])
 def receive_data():
@@ -304,14 +334,14 @@ def get_storeProducts(generic_id):
         return f"An error occurred: {e}", 400
 
 # Currently not in use - just in case we want to refactor and only ping db for recentprices instead of the entire StoreProduct object
-@flutter_bp.route('/get_recentPrices/<product_id>', methods=['GET'])
+@flutter_bp.route('/get_productDetails/<product_id>', methods=['GET'])
 def get_productDetails(product_id):
     try:
         if not product_id:
             return jsonify({"error": "productId parameter is required"}), 400
         
         collection = mongoClient.get_collection(collection="storeProducts")
-        result = collection.find_one({"_id": ObjectId(product_id)}, {'recentPrices': 1, "_id": 0})
+        result = collection.find_one({"_id": ObjectId(product_id)}, {"_id": 0, "genericId": 0})
         if not result:
             return jsonify({"error": "No product found with the given ID"}), 404
 
